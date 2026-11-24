@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Grand Athenaeum — 3D Vintage Library</title>
+
+  <!-- Vintage Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Cinzel', 'serif'],
+            serif: ['Playfair Display', 'serif'],
+            body: ['EB Garamond', 'serif'],
+          },
+          colors: {
+            espresso: {
+              950: '#0f0a07',
+              900: '#1a110b',
+              800: '#281b12',
+              700: '#3a271a',
+            },
+            gold: {
+              300: '#f3d999',
+              400: '#e2bd6b',
+              500: '#c99b42',
+              600: '#9e7528',
+            },
+            parchment: {
+              50: '#fbf6e8',
+              100: '#f4e9cf',
+              200: '#e8d5ae',
+              300: '#d7bc8a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Three.js ES Module Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0f0a07;
+      font-family: 'EB Garamond', serif;
+      color: #f4e9cf;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Vintage Glassmorphism Panels */
+    .vintage-panel {
+      background: linear-gradient(145deg, rgba(28, 18, 12, 0.88), rgba(16, 10, 7, 0.92));
+      border: 1px solid rgba(201, 155, 66, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(243, 217, 153, 0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .vintage-btn {
+      background: linear-gradient(180deg, rgba(48, 31, 20, 0.85), rgba(28, 18, 11, 0.95));
+      border: 1px solid rgba(201, 155, 66, 0.38);
+      color: #f3d999;
+      transition: all 0.25s ease;
+    }
+
+    .vintage-btn:hover {
+      border-color: rgba(243, 217, 153, 0.85);
+      background: linear-gradient(180deg, rgba(72, 46, 28, 0.92), rgba(40, 25, 15, 0.98));
+      box-shadow: 0 0 14px rgba(201, 155, 66, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .vintage-btn.active {
+      background: linear-gradient(180deg, rgba(168, 124, 45, 0.42), rgba(112, 79, 24, 0.55));
+      border-color: #e2bd6b;
+      color: #fff6dc;
+      box-shadow: 0 0 16px rgba(226, 189, 107, 0.35);
+    }
+
+    /* Antique Parchment Book Modal */
+    .parchment-book {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 250, 235, 0.65), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(196, 162, 105, 0.28), transparent 60%),
+        linear-gradient(135deg, #f6ecd5 0%, #efe0be 50%, #e7d2a7 100%);
+      color: #2b1c11;
+      border: 2px solid #9e7528;
+      box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.85),
+        inset 0 0 40px rgba(120, 82, 34, 0.22),
+        0 0 0 6px rgba(42, 26, 15, 0.95),
+        0 0 0 8px rgba(201, 155, 66, 0.45);
+      user-select: text;
+    }
+
+    .book-spine-shadow {
+      background: linear-gradient(90deg, rgba(66, 40, 18, 0.16) 0%, rgba(66, 40, 18, 0.04) 45%, transparent 100%);
+    }
+
+    .drop-cap::first-letter {
+      float: left;
+      font-family: 'Cinzel', serif;
+      font-size: 3.4rem;
+      line-height: 0.82;
+      padding-right: 0.5rem;
+      padding-top: 0.2rem;
+      color: #7c2d12;
+      font-weight: 700;
+    }
+
+    /* Custom Vintage Scrollbar */
+    .vintage-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .vintage-scroll::-webkit-scrollbar-track {
+      background: rgba(20, 13, 8, 0.35);
+      border-radius: 9999px;
+    }
+    .vintage-scroll::-webkit-scrollbar-thumb {
+      background: rgba(180, 136, 56, 0.55);
+      border-radius: 9999px;
+    }
+    .vintage-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(226, 189, 107, 0.85);
+    }
+
+    .parchment-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .parchment-scroll::-webkit-scrollbar-track {
+      background: rgba(139, 98, 43, 0.12);
+      border-radius: 9999px;
+    }
+    .parchment-scroll::-webkit-scrollbar-thumb {
+      background: rgba(139, 98, 43, 0.45);
+      border-radius: 9999px;
+    }
+
+    /* Floating Hover Label */
+    #hover-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 40;
+      transform: translate(-50%, -125%);
+      transition: opacity 0.18s ease;
+    }
+
+    /* Subtle Glow Animation */
+    @keyframes gentlePulse {
+      0%, 100% { opacity: 0.75; }
+      50% { opacity: 1; }
+    }
+    .animate-gentle-pulse {
+      animation: gentlePulse 3s ease-in-out infinite;
+    }
+
+    /* Fade Transitions */
+    .fade-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js WebGL Viewport -->
+  <div id="canvas-container" aria-label="Interactive 3D Vintage Library"></div>
+
+  <!-- Floating Hover Tooltip for Books & Interactive Props -->
+  <div id="hover-tooltip" class="fade-hidden">
+    <div class="vintage-panel px-3.5 py-2 rounded-lg text-center max-w-xs">
+      <div id="tooltip-kicker" class="text-[10px] uppercase tracking-[0.2em] text-gold-400 font-display"></div>
+      <div id="tooltip-title" class="text-sm md:text-base font-serif font-semibold text-parchment-50 leading-tight mt-0.5"></div>
+      <div id="tooltip-sub" class="text-xs italic text-parchment-200/80 mt-0.5"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification (replaces alert) -->
+  <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 fade-hidden transition-all duration-300 pointer-events-none">
+    <div class="vintage-panel px-4 py-2 rounded-full text-sm text-gold-300 font-display tracking-wider flex items-center gap-2">
+      <span class="text-gold-400">✦</span>
+      <span id="toast-message">Message</span>
+    </div>
+  </div>
+
+  <!-- Welcoming Intro Overlay -->
+  <div id="intro-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-espresso-950/85 backdrop-blur-md transition-opacity duration-700">
+    <div class="vintage-panel max-w-xl w-full rounded-2xl p-7 sm:p-10 text-center relative overflow-hidden">
+      <!-- Corner Filigree Accents -->
+      <div class="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-gold-500/60 rounded-tl"></div>
+      <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-gold-500/60 rounded-tr"></div>
+      <div class="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-gold-500/60 rounded-bl"></div>
+      <div class="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-gold-500/60 rounded-br"></div>
+
+      <div class="text-gold-400 text-xs uppercase tracking-[0.35em] font-display mb-2">Est. MDCCCLXXXIV</div>
+      <h1 class="font-display text-3xl sm:text-4xl md:text-5xl text-parchment-50 tracking-wide mb-3">
+        The Grand Athenaeum
+      </h1>
+      <div class="flex items-center justify-center gap-3 mb-5">
+        <span class="h-px w-12 bg-gradient-to-r from-transparent to-gold-500"></span>
+        <span class="text-gold-400 text-sm">❖</span>
+        <span class="h-px w-12 bg-gradient-to-l from-transparent to-gold-500"></span>
+      </div>
+
+      <p class="font-body text-base sm:text-lg text-parchment-200/90 leading-relaxed mb-6">
+        Welcome to a sanctuary of forgotten astronomy, botanical folios, alchemy, and timeless prose.
+        Drift among mahogany shelves, toggle the candlelit ambiance, and click any gilded volume to draw it from its resting place and read its pages.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-parchment-200/80 mb-7 text-left">
+        <div class="bg-espresso-900/70 border border-gold-500/20 rounded-lg p-3">
+          <div class="font-display text-gold-300 mb-0.5">Orbit &amp; Zoom</div>
+          Drag to look around, scroll or pinch to move closer.
+        </div>
+        <div class="bg-espresso-900/70 border border-gold-500/20 rounded-lg p-3">
+          <div class="font-display text-gold-300 mb-0.5">12 Curated Tomes</div>
+          Seek gilded spines or browse the Library Catalog.
+        </div>
+        <div class="bg-espresso-900/70 border border-gold-500/20 rounded-lg p-3">
+          <div class="font-display text-gold-300 mb-0.5">Living Room</div>
+          Click the emerald lamp or brass chandelier to toggle lights.
+        </div>
+      </div>
+
+      <button id="enter-btn" class="vintage-btn px-8 py-3.5 rounded-xl font-display text-sm sm:text-base tracking-[0.2em] uppercase cursor-pointer">
+        Step Inside the Athenaeum
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Navigation & Status HUD -->
+  <header id="top-hud" class="fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 pointer-events-none flex flex-wrap items-center justify-between gap-2 transition-opacity duration-500">
+    <!-- Left: Library Title & Discovery Progress -->
+    <div class="pointer-events-auto flex items-center gap-2 sm:gap-3">
+      <div class="vintage-panel px-3.5 py-2 rounded-xl flex items-center gap-3">
+        <div>
+          <div class="font-display text-xs sm:text-sm tracking-[0.18em] text-gold-300 leading-none">THE ATHENAEUM</div>
+          <div class="text-[11px] text-parchment-200/75 mt-1 flex items-center gap-1.5">
+            <span>Books Discovered:</span>
+            <span id="discovered-count" class="font-display text-gold-300 font-semibold">0 / 12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 sm:gap-2">
+      <!-- Lighting Mood Toggle -->
+      <button id="btn-mood" class="vintage-btn px-3 py-2 rounded-xl text-xs font-display tracking-wider flex items-center gap-1.5 cursor-pointer" title="Switch Lighting Atmosphere">
+        <span id="mood-icon">🌙</span>
+        <span id="mood-label" class="hidden sm:inline">Candlelit Midnight</span>
+      </button>
+
+      <!-- Highlight Curated Books Toggle -->
+      <button id="btn-highlight" class="vintage-btn px-3 py-2 rounded-xl text-xs font-display tracking-wider flex items-center gap-1.5 cursor-pointer" title="Highlight Interactive Curated Books">
+        <span>✦</span>
+        <span class="hidden md:inline">Highlight Tomes</span>
+      </button>
+
+      <!-- Ambient Audio Toggle -->
+      <button id="btn-audio" class="vintage-btn px-3 py-2 rounded-xl text-xs font-display tracking-wider flex items-center gap-1.5 cursor-pointer" title="Toggle Cozy Rain &amp; Hearth Audio">
+        <span id="audio-icon">🔇</span>
+        <span class="hidden md:inline" id="audio-label">Ambience Off</span>
+      </button>
+
+      <!-- Open Library Catalog -->
+      <button id="btn-catalog" class="vintage-btn px-3.5 py-2 rounded-xl text-xs font-display tracking-wider flex items-center gap-1.5 cursor-pointer" title="Open Library Catalog">
+        <span>📖</span>
+        <span>Catalog</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Bottom Camera Viewpoints Bar -->
+  <nav id="bottom-hud" class="fixed bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 max-w-[95vw] pointer-events-auto transition-opacity duration-500">
+    <div class="vintage-panel px-2 py-1.5 rounded-2xl flex items-center gap-1 sm:gap-1.5 overflow-x-auto vintage-scroll">
+      <button data-view="grandHall" class="view-btn vintage-btn active px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-display tracking-wider whitespace-nowrap cursor-pointer">
+        Grand Hall
+      </button>
+      <button data-view="readingDesk" class="view-btn vintage-btn px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-display tracking-wider whitespace-nowrap cursor-pointer">
+        Reading Desk
+      </button>
+      <button data-view="westShelves" class="view-btn vintage-btn px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-display tracking-wider whitespace-nowrap cursor-pointer">
+        West Shelves
+      </button>
+      <button data-view="eastShelves" class="view-btn vintage-btn px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-display tracking-wider whitespace-nowrap cursor-pointer">
+        East Shelves
+      </button>
+      <button data-view="upperGallery" class="view-btn vintage-btn px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-display tracking-wider whitespace-nowrap cursor-pointer">
+        Upper Gallery
+      </button>
+    </div>
+  </nav>
+
+  <!-- Collapsible Library Catalog Side Drawer -->
+  <aside id="catalog-drawer" class="fixed top-0 right-0 h-full w-full max-w-sm z-30 transform translate-x-full transition-transform duration-400 ease-out pointer-events-auto">
+    <div class="vintage-panel h-full flex flex-col border-l border-gold-500/40 rounded-none sm:rounded-l-2xl">
+      <div class="p-4 sm:p-5 border-b border-gold-500/25 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] uppercase tracking-[0.25em] text-gold-400 font-display">Curated Archives</div>
+          <h2 class="font-display text-xl text-parchment-50 tracking-wide">Library Catalog</h2>
+        </div>
+        <button id="btn-close-catalog" class="vintage-btn w-9 h-9 rounded-lg flex items-center justify-center text-lg cursor-pointer" aria-label="Close Catalog">
+          ✕
+        </button>
+      </div>
+
+      <div class="px-4 py-2.5 bg-espresso-950/50 border-b border-gold-500/20 flex items-center justify-between text-xs text-parchment-200/80">
+        <span>Select any volume to fly to its shelf</span>
+        <span id="catalog-bookmark-count" class="text-gold-300 font-display">★ 0 Saved</span>
+      </div>
+
+      <div id="catalog-list" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 vintage-scroll">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- Vintage Parchment Book Reader Modal -->
+  <div id="book-modal" class="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 bg-espresso-950/65 backdrop-blur-sm fade-hidden transition-opacity duration-300">
+    <div class="parchment-book relative w-full max-w-4xl max-h-[88vh] rounded-xl overflow-hidden flex flex-col">
+      <!-- Top Ribbon Header -->
+      <div class="px-5 sm:px-8 py-4 border-b border-amber-900/25 flex flex-wrap items-center justify-between gap-2 bg-amber-950/5">
+        <div class="flex items-center gap-2 text-xs font-display tracking-[0.18em] text-amber-900 uppercase">
+          <span id="modal-wing">West Wing</span>
+          <span>•</span>
+          <span id="modal-genre">Astronomy</span>
+          <span>•</span>
+          <span id="modal-year">1842</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-bookmark" class="px-3 py-1.5 rounded-lg border border-amber-900/40 text-xs font-display tracking-wider text-amber-950 hover:bg-amber-900/10 transition cursor-pointer flex items-center gap-1.5">
+            <span id="bookmark-star">☆</span>
+            <span id="bookmark-text">Bookmark</span>
+          </button>
+          <button id="btn-close-book" class="px-3 py-1.5 rounded-lg bg-amber-950 text-parchment-100 text-xs font-display tracking-wider hover:bg-amber-900 transition cursor-pointer">
+            Return to Library
+          </button>
+        </div>
+      </div>
+
+      <!-- Open Book Spread Content -->
+      <div class="flex-1 overflow-y-auto parchment-scroll grid grid-cols-1 md:grid-cols-12">
+        <!-- Left Page: Title, Author, Emblem, Synopsis -->
+        <div class="md:col-span-5 p-6 sm:p-8 border-b md:border-b-0 md:border-r border-amber-900/20 flex flex-col justify-between bg-amber-900/[0.03]">
+          <div>
+            <div id="modal-color-swatch" class="w-12 h-1.5 rounded-full mb-4 bg-amber-900"></div>
+            <h2 id="modal-title" class="font-serif text-2xl sm:text-3xl font-bold text-espresso-950 leading-snug mb-2">
+              Book Title
+            </h2>
+            <p id="modal-author" class="font-body italic text-lg text-amber-900 mb-5">
+              by Author Name
+            </p>
+
+            <div class="flex items-center gap-2 mb-5">
+              <span class="h-px flex-1 bg-amber-900/25"></span>
+              <span class="text-amber-800 text-xs">❧</span>
+              <span class="h-px flex-1 bg-amber-900/25"></span>
+            </div>
+
+            <div class="text-xs font-display uppercase tracking-[0.2em] text-amber-900/80 mb-2">Archivist's Note</div>
+            <p id="modal-synopsis" class="font-body text-base text-espresso-900/90 leading-relaxed">
+              Synopsis goes here.
+            </p>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-amber-900/15 flex items-center justify-between text-xs text-amber-900/75 font-display">
+            <span id="modal-index">Volume I of XII</span>
+            <span>Athenaeum Rare Folio</span>
+          </div>
+        </div>
+
+        <!-- Right Page: Readable Multi-Paragraph Excerpt -->
+        <div class="md:col-span-7 p-6 sm:p-8 book-spine-shadow">
+          <div class="text-xs font-display uppercase tracking-[0.22em] text-amber-900/70 mb-4 text-center">
+            — Selected Excerpt —
+          </div>
+          <div id="modal-excerpt" class="font-body text-base sm:text-lg text-espresso-950 leading-relaxed space-y-4">
+            <!-- Excerpt paragraphs injected here -->
+          </div>
+          <div class="mt-8 text-center text-amber-900/60 font-serif italic text-sm">
+            ✦ Finis Excerptum ✦
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation Controls -->
+      <div class="px-5 sm:px-8 py-3.5 border-t border-amber-900/25 bg-amber-950/5 flex items-center justify-between gap-2">
+        <button id="btn-prev-book" class="px-3.5 py-2 rounded-lg border border-amber-900/35 text-xs font-display tracking-wider text-amber-950 hover:bg-amber-900/10 transition cursor-pointer">
+          ← Previous Book
+        </button>
+        <span class="hidden sm:inline text-xs italic text-amber-900/70">Press ESC to return to the hall</span>
+        <button id="btn-next-book" class="px-3.5 py-2 rounded-lg border border-amber-900/35 text-xs font-display tracking-wider text-amber-950 hover:bg-amber-900/10 transition cursor-pointer">
+          Next Book →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Three.js Application Module -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    /* =========================================================================
+       1. CURATED LIBRARY CATALOG DATA (12 Interactive Vintage Volumes)
+       ========================================================================= */
+    const CURATED_BOOKS = [
+      {
+        id: 'celestial-atlas',
+        title: 'Atlas of the Nocturnal Spheres',
+        author: 'Prof. Aurelius Vance',
+        year: '1847',
+        genre: 'Astronomy',
+        wing: 'West Shelves',
+        color: '#1b2d48',
+        accent: '#e2bd6b',
+        synopsis: 'A copperplate compendium charting forgotten constellations, lunar maria, and the subtle drift of comets observed from the Royal Observatory.',
+        excerpt: [
+          'Beneath the velvet vault of winter, the patient observer discovers that no star truly sleeps. Even the faintest ember in Cassiopeia trembles with an ancient correspondence, sending its quiet geometry across leagues of ether to meet the brass lens.',
+          'Upon the fourth night of November, I calibrated the equatorial mount with fresh oil of cloves and recorded a pale aureole trailing the eastern horizon. Though my assistants dismissed it as river mist, the glass revealed a feathered tail of silver dust.',
+          'To map the heavens is not merely to measure angles; it is to keep a ledger of wonder so that future wanderers may look upward and recognize old friends.'
+        ]
+      },
+      {
+        id: 'botanica-umbrarum',
+        title: 'Flora of the Shadowed Glasshouse',
+        author: 'Clara Evelyn Marsh',
+        year: '1873',
+        genre: 'Botanical Studies',
+        wing: 'West Shelves',
+        color: '#1f4030',
+        accent: '#d8b66c',
+        synopsis: 'Hand-tinted botanical studies of nocturnal orchids, silver ferns, and rare alpine mosses cultivated in Victorian conservatories.',
+        excerpt: [
+          'Most gardeners court the noon sun, yet the truest perfumes belong to dusk. When condensation beads along the curved iron ribs of the glasshouse, the pale petals of Epiphyllum uncurl like unfolded parchment.',
+          'In specimen Plate XIV, gathered from a misty ravine above Darjeeling, the leaves retain a faint metallic sheen even when pressed between linen sheets for three winters. A single drop of rainwater restores their emerald veining within minutes.',
+          'Observe the roots before the bloom: every resilient flower keeps its quietest wisdom hidden in the dark earth.'
+        ]
+      },
+      {
+        id: 'alchemical-vessels',
+        title: 'Treatise on Amber & Distillation',
+        author: 'Master Henrik Lindholm',
+        year: '1798',
+        genre: 'Alchemy',
+        wing: 'West Shelves',
+        color: '#5c1f24',
+        accent: '#e5c16c',
+        synopsis: 'An esoteric manual of alembic geometry, Baltic amber tinctures, and the philosophical pursuit of luminous pigments.',
+        excerpt: [
+          'Fire must never be hurried, nor glass insulted by sudden cold. The novice demands gold before sunset and receives only soot; the adept tends a steady coal until the vessel sings with a clear, honeyed vapor.',
+          'Within ancient sea-amber lies trapped sunlight from an elder world. Ground gently in a porphyry mortar and steeped in spirits of rosemary, it yields a varnish so warm that oak planks appear lit from within.',
+          'Remember the first maxim inscribed above the furnace: we do not conquer matter, we persuade it to reveal its hidden grace.'
+        ]
+      },
+      {
+        id: 'chronicles-clockwork',
+        title: 'The Horologist’s Secret Pendulum',
+        author: 'Julian H. Sterling',
+        year: '1889',
+        genre: 'Mystery',
+        wing: 'West Shelves',
+        color: '#4a3525',
+        accent: '#e0bc68',
+        synopsis: 'A gaslit mystery following a London clockmaker who discovers a coded message engraved inside the mainspring of an antique cathedral clock.',
+        excerpt: [
+          'The fog had settled against the shopfront like damp wool when the gentleman in the astrakhan collar placed the mahogany case upon my bench. "It loses exactly seven seconds every midnight," he murmured, "and I must know why."',
+          'Under my jeweler’s loupe, the brass escape wheel was immaculate. Yet etched along the inner rim of the barrel—visible only when the lantern tilted at forty degrees—ran a line of microscopic Roman numerals.',
+          'They were not a maker’s signature. They were coordinates leading beneath the flagstones of St. Jude’s cloister.'
+        ]
+      },
+      {
+        id: 'meditations-ink',
+        title: 'Letters on Solitude & Quietude',
+        author: 'Eleanor Ashworth',
+        year: '1861',
+        genre: 'Philosophy',
+        wing: 'Reading Desk',
+        color: '#6b2c2c',
+        accent: '#f0cf80',
+        synopsis: 'Intimate philosophical essays composed by candlelight on the art of reflection, memory, and the architecture of a peaceful mind.',
+        excerpt: [
+          'A room lined with books is never truly empty. Even when the hearth sinks to crimson embers and rain taps its soft cadence against the arched glass, one sits in the company of centuries.',
+          'We rush through our hours as though time were a debt collector, forgetting that the finest thoughts arrive like shy deer—only when the clearing grows still and unhurried.',
+          'Keep a small lamp burning on your desk, not merely to read the page before you, but to remind yourself that clarity is a gentle flame.'
+        ]
+      },
+      {
+        id: 'cartography-lost-isles',
+        title: 'Charts of the Phantom Archipelagos',
+        author: 'Capt. Alistair Finch',
+        year: '1824',
+        genre: 'Exploration',
+        wing: 'Reading Desk',
+        color: '#233b4d',
+        accent: '#e3c072',
+        synopsis: 'Nautical logs and watercolor maps documenting islands that appeared on seventeenth-century sea charts yet vanished from modern compasses.',
+        excerpt: [
+          'Off the thirty-eighth parallel, where the trade winds falter into glass-calm swells, old Portuguese mariners drew an island crowned with cedar spires and named it Antillia.',
+          'Twice in my voyages aboard the brigantine Halcyon, the lookout cried landfall at dawn—a purple ridge floating above a mirage of mist—only for the afternoon sun to dissolve the coast into open indigo water.',
+          'Whether these shores sank beneath the tide or exist only in the longing of sailors, they remain the truest landmarks of the human imagination.'
+        ]
+      },
+      {
+        id: 'sonnets-autumn',
+        title: 'Elegies of the Golden Leaf',
+        author: 'Sebastian Ward',
+        year: '1854',
+        genre: 'Classic Literature',
+        wing: 'East Shelves',
+        color: '#7a4b1e',
+        accent: '#f2d488',
+        synopsis: 'A gilded cloth-bound anthology of lyrical verse celebrating autumn twilights, orchard mists, and enduring affection.',
+        excerpt: [
+          'When October lays its copper cloak along the garden wall, the sparrows gather in the ivy to rehearse their winter hymns. No spring blossom holds the quiet majesty of a leaf that turns to gold before letting go.',
+          'You asked what endures when the seasons fold their tents. Look to the cedar beam above our lintel, darkened by fifty winters of hearth-smoke, still fragrant whenever rain blows through the casement.',
+          'So too are the words we speak in kindness: weathered by years, yet warm to the touch.'
+        ]
+      },
+      {
+        id: 'symphony-acoustics',
+        title: 'Harmonics of Wood & Catgut',
+        author: 'Maestro Lorenzo Bellini',
+        year: '1816',
+        genre: 'Music & Craft',
+        wing: 'East Shelves',
+        color: '#3d1e2b',
+        accent: '#e2bd6b',
+        synopsis: 'A Cremonese luthier’s notebooks detailing how alpine spruce, aged maple, and amber varnish awaken the voice of a violin.',
+        excerpt: [
+          'Before a chisel touches the spruce, one must tap the plank beside the ear and listen. A worthy tree remembers the mountain wind that bent its boughs for two hundred winters.',
+          'Carve the soundboard a hair too thick and the tone remains imprisoned; shave it too thin and it weeps without strength. Between those two margins dwells the singing soul of the instrument.',
+          'When the bow finally crosses the strings in a quiet hall, it is the forest itself that answers.'
+        ]
+      },
+      {
+        id: 'bestiary-mythic',
+        title: 'Compendium of Winged Curiosities',
+        author: 'Dr. Thaddeus Rook',
+        year: '1838',
+        genre: 'Natural History',
+        wing: 'East Shelves',
+        color: '#273d2c',
+        accent: '#dfbc6a',
+        synopsis: 'Engraved plates and field notes examining owls, moths, and rare migratory birds once believed to carry omens across Europe.',
+        excerpt: [
+          'The barn owl glides without a whisper because the leading edge of its primary feathers is combed like velvet teeth, breaking the rushing air into silence.',
+          'Villagers along the fenlands once called it the "lantern-ghost," mistaking its pale breast gliding over the reeds for a wandering candle. Yet upon close inspection, no creature is more industrious or tender toward its brood.',
+          'Superstition fades the instant curiosity lights a match.'
+        ]
+      },
+      {
+        id: 'labyrinth-mirrors',
+        title: 'The Venetian Glassmaker’s Ledger',
+        author: 'Contessa Beatrice Conti',
+        year: '1785',
+        genre: 'Mystery',
+        wing: 'East Shelves',
+        color: '#1c353d',
+        accent: '#ebd088',
+        synopsis: 'Secret correspondence from the island of Murano revealing how a guild of artisans hid a royal cipher inside a hall of silvered mirrors.',
+        excerpt: [
+          'On Murano, silence is guarded more fiercely than gold. Every apprentice swears by the furnace that the proportions of soda ash, quartz sand, and manganese shall never cross the lagoon.',
+          'Yet my uncle left a second ledger behind the loose brick of the cooling kiln. Within its pages were not formulas for crystal goblets, but angles of reflection designed for the Doge’s private gallery.',
+          'Stand between the third and fourth sconce at dusk, and the mirrors align to reveal a corridor no architect ever drew.'
+        ]
+      },
+      {
+        id: 'ethics-stoic-lantern',
+        title: 'The Lantern of Epictetus',
+        author: 'Translated by M. Holloway',
+        year: '1868',
+        genre: 'Philosophy',
+        wing: 'North Alcove',
+        color: '#4f3b26',
+        accent: '#e5c473',
+        synopsis: 'A pocket-sized leather translation of classical Stoic aphorisms annotated with marginalia by three generations of Oxford scholars.',
+        excerpt: [
+          'It is not the storm at sea that undoes the helmsman, but the belief that the sea ought to obey his timetable. Steady the hand upon the tiller, and even a fierce gale becomes a teacher.',
+          'In the margin of page forty-two, a former owner wrote in faded iron-gall ink: "Read during the frost of 1881, when the Thames froze at Richmond—found great comfort here."',
+          'Books outlive their keepers, carrying quiet courage from one century’s pocket to the next.'
+        ]
+      },
+      {
+        id: 'stargazer-almanac',
+        title: 'The Grand Eclipse Almanac',
+        author: 'Royal Society of Observers',
+        year: '1892',
+        genre: 'Astronomy',
+        wing: 'North Alcove',
+        color: '#2c1f3d',
+        accent: '#f0cf80',
+        synopsis: 'Tables of planetary conjunctions, tidal charts, and eyewitness accounts of total solar eclipses across the nineteenth century.',
+        excerpt: [
+          'As the lunar disc sealed the last crescent of the sun, an extraordinary hush fell over the meadow. Birds returned to the hedgerows as though midnight had arrived at noon, and the air cooled by eight degrees.',
+          'Around the darkened sphere bloomed the pearly corona—delicate streamers stretching outward like brushed silk against a twilight sky where Venus shone bold and unmistakable.',
+          'For two hundred and twelve seconds, every scholar dropped their pencil and simply beheld the cosmos.'
+        ]
+      }
+    ];
+
+    /* =========================================================================
+       2. APPLICATION STATE & CAMERA PRESETS
+       ========================================================================= */
+    const state = {
+      mood: 'midnight', // 'midnight' | 'afternoon'
+      highlightCurated: false,
+      audioEnabled: false,
+      lampOn: true,
+      chandelierOn: true,
+      discoveredIds: new Set(),
+      bookmarkedIds: new Set(),
+      activeBookIndex: null,
+      hoveredObject: null,
+      preBookCamera: null,
+      cameraAnim: null,
+      catalogOpen: false
+    };
+
+    const VIEWPOINTS = {
+      grandHall: {
+        pos: new THREE.Vector3(0.4, 3.3, 6.2),
+        target: new THREE.Vector3(0, 2.5, -1.2)
+      },
+      readingDesk: {
+        pos: new THREE.Vector3(2.3, 2.35, 3.1),
+        target: new THREE.Vector3(-0.1, 1.25, 0.7)
+      },
+      westShelves: {
+        pos: new THREE.Vector3(-2.3, 2.8, 1.2),
+        target: new THREE.Vector3(-7.2, 2.7, 0.4)
+      },
+      eastShelves: {
+        pos: new THREE.Vector3(2.3, 2.8, 1.2),
+        target: new THREE.Vector3(7.2, 2.7, 0.4)
+      },
+      upperGallery: {
+        pos: new THREE.Vector3(-4.2, 6.4, 5.4),
+        target: new THREE.Vector3(0.4, 3.4, -2.5)
+      }
+    };
+
+    /* =========================================================================
+       3. PROCEDURAL CANVAS TEXTURE GENERATORS (Zero External Image Dependencies)
+       ========================================================================= */
+    function createWoodTexture(baseHex = '#3a2214', grainHex = '#23130a', planks = 6, vertical = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = baseHex;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Subtle wood grain waves
+      for (let i = 0; i < 160; i++) {
+        ctx.strokeStyle = i % 3 === 0 ? grainHex : 'rgba(255, 200, 140, 0.04)';
+        ctx.lineWidth = 1 + Math.random() * 2.5;
+        ctx.beginPath();
+        if (vertical) {
+          const x = Math.random() * 512;
+          ctx.moveTo(x, 0);
+          ctx.bezierCurveTo(x + (Math.random() - 0.5) * 18, 170, x + (Math.random() - 0.5) * 18, 340, x + (Math.random() - 0.5) * 10, 512);
+        } else {
+          const y = Math.random() * 512;
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(170, y + (Math.random() - 0.5) * 18, 340, y + (Math.random() - 0.5) * 18, 512, y + (Math.random() - 0.5) * 10);
+        }
+        ctx.stroke();
+      }
+
+      // Plank seams
+      if (planks > 0) {
+        ctx.strokeStyle = 'rgba(10, 5, 2, 0.55)';
+        ctx.lineWidth = 2;
+        const step = 512 / planks;
+        for (let p = 1; p < planks; p++) {
+          ctx.beginPath();
+          if (vertical) {
+            ctx.moveTo(p * step, 0);
+            ctx.lineTo(p * step, 512);
+          } else {
+            ctx.moveTo(0, p * step);
+            ctx.lineTo(512, p * step);
+          }
+          ctx.stroke();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createWallpaperTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Deep Victorian emerald-charcoal damask base
+      ctx.fillStyle = '#1b241e';
+      ctx.fillRect(0, 0, 256, 256);
+
+      // Subtle vertical stripes
+      ctx.fillStyle = 'rgba(201, 155, 66, 0.045)';
+      for (let x = 0; x < 256; x += 32) {
+        ctx.fillRect(x, 0, 12, 256);
+      }
+
+      // Damask diamond motifs
+      ctx.strokeStyle = 'rgba(201, 155, 66, 0.12)';
+      ctx.lineWidth = 1.5;
+      for (let y = 0; y <= 256; y += 64) {
+        for (let x = 0; x <= 256; x += 64) {
+          ctx.beginPath();
+          ctx.moveTo(x, y - 16);
+          ctx.lineTo(x + 14, y);
+          ctx.lineTo(x, y + 16);
+          ctx.lineTo(x - 14, y);
+          ctx.closePath();
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(201, 155, 66, 0.08)';
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 3);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createRugTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      // Rich Persian crimson field
+      ctx.fillStyle = '#5e171c';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Ornate nested borders
+      const borders = [
+        { inset: 14, color: '#1b263b', width: 22 },
+        { inset: 36, color: '#c99b42', width: 8 },
+        { inset: 48, color: '#3b1014', width: 14 },
+        { inset: 66, color: '#d9bc82', width: 4 }
+      ];
+      borders.forEach(b => {
+        ctx.strokeStyle = b.color;
+        ctx.lineWidth = b.width;
+        ctx.strokeRect(b.inset, b.inset, 512 - b.inset * 2, 512 - b.inset * 2);
+      });
+
+      // Decorative border dots
+      ctx.fillStyle = '#e5c67a';
+      for (let i = 24; i < 490; i += 22) {
+        ctx.fillRect(i, 12, 6, 6);
+        ctx.fillRect(i, 494, 6, 6);
+        ctx.fillRect(12, i, 6, 6);
+        ctx.fillRect(494, i, 6, 6);
+      }
+
+      // Central Medallion
+      ctx.save();
+      ctx.translate(256, 256);
+      const drawDiamond = (rx, ry, fill, stroke) => {
+        ctx.beginPath();
+        ctx.moveTo(0, -ry);
+        ctx.lineTo(rx, 0);
+        ctx.lineTo(0, ry);
+        ctx.lineTo(-rx, 0);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        if (stroke) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        }
+      };
+      drawDiamond(130, 155, '#1b263b', '#d9bc82');
+      drawDiamond(90, 110, '#7c2227', '#e5c67a');
+      drawDiamond(46, 58, '#c99b42', '#1b263b');
+      drawDiamond(20, 26, '#f2e0b6', null);
+      ctx.restore();
+
+      // Subtle woven fabric noise
+      for (let i = 0; i < 4000; i++) {
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,240,210,0.035)' : 'rgba(0,0,0,0.05)';
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createBookSpineTexture(baseColor, accentColor, isCurated = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Leather base
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(0, 0, 64, 256);
+
+      // Edge shading for rounded spine illusion
+      const grad = ctx.createLinearGradient(0, 0, 64, 0);
+      grad.addColorStop(0, 'rgba(0,0,0,0.45)');
+      grad.addColorStop(0.2, 'rgba(255,255,255,0.08)');
+      grad.addColorStop(0.8, 'rgba(255,255,255,0.04)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 256);
+
+      // Gold spine bands
+      ctx.fillStyle = accentColor;
+      const bands = isCurated ? [24, 34, 72, 184, 222, 232] : [28, 224];
+      bands.forEach(y => {
+        ctx.fillRect(6, y, 52, isCurated ? 4 : 3);
+      });
+
+      // Decorative title plate / emblem for curated books
+      if (isCurated) {
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 84, 44, 88);
+
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        ctx.moveTo(32, 112);
+        ctx.lineTo(42, 128);
+        ctx.lineTo(32, 144);
+        ctx.lineTo(22, 128);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createPaintingTexture(theme = 'celestial') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 320;
+      const ctx = canvas.getContext('2d');
+
+      if (theme === 'celestial') {
+        const bg = ctx.createLinearGradient(0, 0, 0, 320);
+        bg.addColorStop(0, '#121a2d');
+        bg.addColorStop(1, '#2a221b');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, 256, 320);
+
+        ctx.strokeStyle = 'rgba(226, 189, 107, 0.65)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(128, 150, 74, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(128, 150, 92, 32, -0.4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Crescent moon & stars
+        ctx.fillStyle = '#f3d999';
+        ctx.beginPath();
+        ctx.arc(128, 150, 18, 0, Math.PI * 2);
+        ctx.fill();
+        for (let i = 0; i < 40; i++) {
+          ctx.fillRect(Math.random() * 256, Math.random() * 280, 2, 2);
+        }
+      } else {
+        // Moody vintage landscape
+        const sky = ctx.createLinearGradient(0, 0, 0, 200);
+        sky.addColorStop(0, '#2a2c38');
+        sky.addColorStop(0.6, '#876342');
+        sky.addColorStop(1, '#cfa165');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, 256, 320);
+
+        // Distant hills
+        ctx.fillStyle = '#2d261e';
+        ctx.beginPath();
+        ctx.moveTo(0, 210);
+        ctx.quadraticCurveTo(80, 155, 160, 195);
+        ctx.quadraticCurveTo(210, 175, 256, 205);
+        ctx.lineTo(256, 320);
+        ctx.lineTo(0, 320);
+        ctx.fill();
+
+        // Foreground cypress trees
+        ctx.fillStyle = '#18140f';
+        ctx.fillRect(0, 240, 256, 80);
+        ctx.beginPath();
+        ctx.ellipse(60, 220, 14, 48, 0, 0, Math.PI * 2);
+        ctx.ellipse(195, 230, 12, 38, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Aged oil varnish vignette
+      const vig = ctx.createRadialGradient(128, 160, 50, 128, 160, 190);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(15,8,2,0.55)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, 256, 320);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createGlobeTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Aged parchment ocean
+      ctx.fillStyle = '#c8aa74';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Latitude / longitude grid
+      ctx.strokeStyle = 'rgba(72, 46, 20, 0.35)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 512; x += 32) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 256); ctx.stroke();
+      }
+      for (let y = 0; y < 256; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+      }
+
+      // Stylized antique landmasses
+      ctx.fillStyle = '#7d5a34';
+      const blobs = [
+        [110, 95, 42, 34], [140, 160, 26, 38],
+        [270, 88, 55, 32], [290, 148, 38, 40],
+        [385, 110, 48, 35], [410, 185, 28, 20]
+      ];
+      blobs.forEach(([x, y, rx, ry]) => {
+        ctx.beginPath();
+        ctx.ellipse(x, y, rx, ry, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createDustParticleTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255, 236, 179, 1)');
+      g.addColorStop(0.35, 'rgba(245, 205, 120, 0.55)');
+      g.addColorStop(1, 'rgba(245, 205, 120, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    /* =========================================================================
+       4. WEB AUDIO API PROCEDURAL AMBIENCE (Rain / Hearth + Gentle Chime)
+       ========================================================================= */
+    class LibraryAudio {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.ambientGain = null;
+        this.isRunning = false;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.7;
+        this.masterGain.connect(this.ctx.destination);
+
+        // Soft Rain / Hearth Brown-Pink Noise
+        const bufferSize = this.ctx.sampleRate * 3;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          output[i] = (lastOut + (0.025 * white)) / 1.025;
+          lastOut = output[i];
+          output[i] *= 2.8;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+        noise.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 460;
+
+        this.ambientGain = this.ctx.createGain();
+        this.ambientGain.gain.value = 0.0;
+
+        noise.connect(filter);
+        filter.connect(this.ambientGain);
+        this.ambientGain.connect(this.masterGain);
+        noise.start();
+      }
+
+      toggle(enable) {
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        this.isRunning = enable;
+        const now = this.ctx.currentTime;
+        this.ambientGain.gain.cancelScheduledValues(now);
+        this.ambientGain.gain.linearRampToValueAtTime(enable ? 0.14 : 0.0, now + 0.8);
+      }
+
+      playBookChime() {
+        if (!state.audioEnabled) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99]; // Warm C major triad
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+          gain.gain.setValueAtTime(0.0001, now + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.05, now + idx * 0.06 + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.06 + 1.1);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now + idx * 0.06);
+          osc.stop(now + idx * 0.06 + 1.15);
+        });
+      }
+
+      playSwitchClick() {
+        if (!state.audioEnabled) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      }
+    }
+
+    const audioEngine = new LibraryAudio();
+
+    /* =========================================================================
+       5. THREE.JS SCENE, RENDERER & CONTROLS SETUP
+       ========================================================================= */
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0c0806');
+    scene.fog = new THREE.FogExp2('#120c09', 0.032);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 60);
+    camera.position.copy(VIEWPOINTS.grandHall.pos);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.copy(VIEWPOINTS.grandHall.target);
+    controls.minDistance = 1.3;
+    controls.maxDistance = 10.5;
+    controls.maxPolarAngle = Math.PI * 0.56;
+    controls.minPolarAngle = Math.PI * 0.18;
+    controls.enablePan = true;
+    controls.panSpeed = 0.6;
+
+    // Collections for interactive raycasting & animation
+    const interactiveBooks = [];
+    const interactiveProps = [];
+    const candleFlames = [];
+    const lightShafts = [];
+
+    /* =========================================================================
+       6. SHARED MATERIALS
+       ========================================================================= */
+    const floorTex = createWoodTexture('#2e1a10', '#180d07', 12, false);
+    floorTex.repeat.set(4, 4);
+    const darkWalnutTex = createWoodTexture('#351e12', '#1d0f08', 0, true);
+    const mahoganyTex = createWoodTexture('#452116', '#240f09', 0, true);
+    const wallpaperTex = createWallpaperTexture();
+    const rugTex = createRugTexture();
+
+    const matFloor = new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.62, metalness: 0.06 });
+    const matWalnut = new THREE.MeshStandardMaterial({ map: darkWalnutTex, roughness: 0.55, metalness: 0.08 });
+    const matMahogany = new THREE.MeshStandardMaterial({ map: mahoganyTex, roughness: 0.48, metalness: 0.1 });
+    const matWallpaper = new THREE.MeshStandardMaterial({ map: wallpaperTex, roughness: 0.88 });
+    const matBrass = new THREE.MeshStandardMaterial({ color: '#cfa349', roughness: 0.28, metalness: 0.85 });
+    const matDarkIron = new THREE.MeshStandardMaterial({ color: '#24201c', roughness: 0.45, metalness: 0.75 });
+    const matEmeraldGlass = new THREE.MeshStandardMaterial({
+      color: '#0e6b43',
+      emissive: '#0c8a4b',
+      emissiveIntensity: 0.9,
+      roughness: 0.18,
+      metalness: 0.1
+    });
+    const matLeatherBurgundy = new THREE.MeshStandardMaterial({ color: '#4d191d', roughness: 0.55, metalness: 0.08 });
+    const matGreenBlotter = new THREE.MeshStandardMaterial({ color: '#173828', roughness: 0.78 });
+    const matParchment = new THREE.MeshStandardMaterial({ color: '#efe2c2', roughness: 0.85 });
+
+    /* =========================================================================
+       7. BUILD THE GRAND VICTORIAN ROOM ARCHITECTURE
+       ========================================================================= */
+    function buildRoom() {
+      const W = 16, D = 16, H = 9.5;
+
+      // Hardwood Floor
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), matFloor);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Ornate Persian Rug
+      const rug = new THREE.Mesh(
+        new THREE.PlaneGeometry(7.2, 5.4),
+        new THREE.MeshStandardMaterial({ map: rugTex, roughness: 0.92 })
+      );
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(0, 0.015, 0.8);
+      rug.receiveShadow = true;
+      scene.add(rug);
+
+      // Coffered Timber Ceiling
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(W, D), matWalnut);
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.y = H;
+      scene.add(ceiling);
+
+      // Ceiling Beams
+      for (let i = -6; i <= 6; i += 4) {
+        const beamX = new THREE.Mesh(new THREE.BoxGeometry(W, 0.35, 0.42), matWalnut);
+        beamX.position.set(0, H - 0.18, i);
+        scene.add(beamX);
+
+        const beamZ = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.35, D), matWalnut);
+        beamZ.position.set(i, H - 0.18, 0);
+        scene.add(beamZ);
+      }
+
+      // Four Walls
+      const wallGeo = new THREE.PlaneGeometry(W, H);
+      const walls = [
+        { pos: [0, H / 2, -D / 2], rotY: 0 },        // North (Back)
+        { pos: [0, H / 2, D / 2], rotY: Math.PI },   // South (Front behind camera)
+        { pos: [-W / 2, H / 2, 0], rotY: Math.PI / 2 }, // West
+        { pos: [W / 2, H / 2, 0], rotY: -Math.PI / 2 }  // East
+      ];
+      walls.forEach(w => {
+        const mesh = new THREE.Mesh(wallGeo, matWallpaper);
+        mesh.position.set(...w.pos);
+        mesh.rotation.y = w.rotY;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      });
+
+      // Lower Wood Wainscoting around perimeter
+      const wainscotHeight = 1.45;
+      const wainscotDefs = [
+        { size: [W, wainscotHeight, 0.18], pos: [0, wainscotHeight / 2, -D / 2 + 0.09] },
+        { size: [W, wainscotHeight, 0.18], pos: [0, wainscotHeight / 2, D / 2 - 0.09] },
+        { size: [0.18, wainscotHeight, D], pos: [-W / 2 + 0.09, wainscotHeight / 2, 0] },
+        { size: [0.18, wainscotHeight, D], pos: [W / 2 - 0.09, wainscotHeight / 2, 0] }
+      ];
+      wainscotDefs.forEach(d => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(...d.size), matWalnut);
+        m.position.set(...d.pos);
+        m.receiveShadow = true;
+        scene.add(m);
+      });
+
+      // Tall Arched Gothic Window on the North Wall (z = -7.9)
+      buildArchedWindow();
+    }
+
+    let windowSkyMat;
+    function buildArchedWindow() {
+      const winGroup = new THREE.Group();
+      winGroup.position.set(0, 0, -7.88);
+
+      // Sky backdrop plane behind window glass
+      windowSkyMat = new THREE.MeshBasicMaterial({ color: '#1b2b52' });
+      const skyRect = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 4.6), windowSkyMat);
+      skyRect.position.set(0, 3.8, -0.02);
+      winGroup.add(skyRect);
+
+      const skyArch = new THREE.Mesh(new THREE.CircleGeometry(1.7, 32, 0, Math.PI), windowSkyMat);
+      skyArch.position.set(0, 6.1, -0.02);
+      winGroup.add(skyArch);
+
+      // Stone/Wood Window Frame Pillars & Sill
+      const pillarGeo = new THREE.BoxGeometry(0.32, 4.9, 0.45);
+      const leftPillar = new THREE.Mesh(pillarGeo, matWalnut);
+      leftPillar.position.set(-1.82, 3.8, 0.12);
+      const rightPillar = new THREE.Mesh(pillarGeo, matWalnut);
+      rightPillar.position.set(1.82, 3.8, 0.12);
+      const sill = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.24, 0.65), matWalnut);
+      sill.position.set(0, 1.48, 0.18);
+      winGroup.add(leftPillar, rightPillar, sill);
+
+      // Arched Frame Top
+      const archRing = new THREE.Mesh(new THREE.TorusGeometry(1.82, 0.18, 12, 36, Math.PI), matWalnut);
+      archRing.position.set(0, 6.1, 0.12);
+      winGroup.add(archRing);
+
+      // Mullions (window pane dividers)
+      const vMullionGeo = new THREE.BoxGeometry(0.08, 6.1, 0.12);
+      [-0.6, 0.6].forEach(x => {
+        const m = new THREE.Mesh(vMullionGeo, matWalnut);
+        m.position.set(x, 4.5, 0.06);
+        winGroup.add(m);
+      });
+      [2.6, 3.8, 5.0, 6.1].forEach(y => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.12), matWalnut);
+        m.position.set(0, y, 0.06);
+        winGroup.add(m);
+      });
+
+      // Atmospheric Light Shafts streaming inward from the window
+      const shaftMat = new THREE.MeshBasicMaterial({
+        color: '#8ab4ff',
+        transparent: true,
+        opacity: 0.055,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+      });
+      for (let i = -1; i <= 1; i++) {
+        const shaft = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 8.5), shaftMat);
+        shaft.position.set(i * 1.15, 3.6, 3.2);
+        shaft.rotation.x = -0.62;
+        shaft.rotation.y = i * 0.08;
+        winGroup.add(shaft);
+        lightShafts.push(shaft);
+      }
+
+      scene.add(winGroup);
+    }
+
+    /* =========================================================================
+       8. BOOKSHELVES, HUNDREDS OF VINTAGE BOOKS & CURATED VOLUMES
+       ========================================================================= */
+    const decorativeBookColors = [
+      '#5b1d22', '#233b2e', '#1e2c45', '#6b4723', '#422618',
+      '#7d5c2b', '#382230', '#2b3e42', '#8c6d46', '#4a1b1f', '#323a29'
+    ];
+    const bookSpineMatCache = new Map();
+    function getBookSpineMaterial(color, accent, isCurated) {
+      const key = `${color}_${accent}_${isCurated}`;
+      if (!bookSpineMatCache.has(key)) {
+        const tex = createBookSpineTexture(color, accent, isCurated);
+        bookSpineMatCache.set(key, new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: isCurated ? 0.38 : 0.62,
+          metalness: isCurated ? 0.25 : 0.08,
+          emissive: new THREE.Color('#c99b42'),
+          emissiveIntensity: 0
+        }));
+      }
+      // Curated books need unique material instances so hover glow affects only one book
+      if (isCurated) {
+        return bookSpineMatCache.get(key).clone();
+      }
+      return bookSpineMatCache.get(key);
+    }
+
+    function createBookMesh(width, height, depth, color, accent, curatedIndex = null) {
+      const isCurated = curatedIndex !== null;
+      const spineMat = getBookSpineMaterial(color, accent, isCurated);
+      const coverMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+      const pageMat = matParchment;
+
+      // BoxGeometry faces: +x, -x, +y, -y, +z (spine faces outward along +z in local space), -z
+      const materials = [coverMat, coverMat, pageMat, pageMat, spineMat, pageMat];
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), materials);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      if (isCurated) {
+        // Add tiny golden bookmark ribbon protruding slightly from the top/bottom
+        const ribbon = new THREE.Mesh(
+          new THREE.BoxGeometry(0.018, 0.09, 0.012),
+          new THREE.MeshStandardMaterial({ color: '#e8c15a', emissive: '#b88628', emissiveIntensity: 0.4, roughness: 0.3, metalness: 0.7 })
+        );
+        ribbon.position.set(0, -height / 2 + 0.03, depth / 2 + 0.008);
+        mesh.add(ribbon);
+      }
+
+      return mesh;
+    }
+
+    function buildBookshelfUnit(x, z, rotY, width, height, shelfCount, curatedSlots = []) {
+      const group = new THREE.Group();
+      group.position.set(x, 0, z);
+      group.rotation.y = rotY;
+
+      const depth = 0.72;
+      const sideThick = 0.1;
+
+      // Back panel
+      const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.06), matWalnut);
+      back.position.set(0, height / 2, -depth / 2 + 0.03);
+      back.receiveShadow = true;
+      group.add(back);
+
+      // Side panels
+      const sideGeo = new THREE.BoxGeometry(sideThick, height, depth);
+      const leftSide = new THREE.Mesh(sideGeo, matMahogany);
+      leftSide.position.set(-width / 2 + sideThick / 2, height / 2, 0);
+      leftSide.castShadow = true;
+      const rightSide = new THREE.Mesh(sideGeo, matMahogany);
+      rightSide.position.set(width / 2 - sideThick / 2, height / 2, 0);
+      rightSide.castShadow = true;
+      group.add(leftSide, rightSide);
+
+      // Base plinth & Top crown molding
+      const base = new THREE.Mesh(new THREE.BoxGeometry(width + 0.08, 0.35, depth + 0.1), matMahogany);
+      base.position.set(0, 0.175, 0.03);
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(width + 0.18, 0.28, depth + 0.18), matMahogany);
+      crown.position.set(0, height + 0.14, 0.06);
+      group.add(base, crown);
+
+      // Brass ladder rail along upper shelf
+      const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, width, 12), matBrass);
+      rail.rotation.z = Math.PI / 2;
+      rail.position.set(0, height - 1.45, depth / 2 + 0.06);
+      group.add(rail);
+
+      // Shelves & Books
+      const usableHeight = height - 0.6;
+      const shelfSpacing = usableHeight / shelfCount;
+      const innerWidth = width - sideThick * 2 - 0.08;
+
+      for (let s = 0; s < shelfCount; s++) {
+        const shelfY = 0.35 + s * shelfSpacing;
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(width - 0.04, 0.06, depth - 0.04), matMahogany);
+        plank.position.set(0, shelfY, 0);
+        plank.receiveShadow = true;
+        group.add(plank);
+
+        // Check if this shelf has a curated book assigned
+        const curatedSlot = curatedSlots.find(c => c.shelf === s);
+
+        let cursorX = -innerWidth / 2 + 0.05;
+        let bookIdxOnShelf = 0;
+
+        while (cursorX < innerWidth / 2 - 0.12) {
+          const isTargetSlot = curatedSlot && bookIdxOnShelf === curatedSlot.posIndex;
+
+          if (isTargetSlot) {
+            const bookData = CURATED_BOOKS[curatedSlot.bookIndex];
+            const bw = 0.12;
+            const bh = Math.min(shelfSpacing - 0.14, 0.56);
+            const bd = 0.44;
+            const bookMesh = createBookMesh(bw, bh, bd, bookData.color, bookData.accent, curatedSlot.bookIndex);
+            bookMesh.position.set(cursorX + bw / 2, shelfY + 0.03 + bh / 2, 0.1);
+            group.add(bookMesh);
+
+            // Register for raycasting & camera flight
+            registerInteractiveBook(bookMesh, curatedSlot.bookIndex, group, new THREE.Vector3(0, 0, 1));
+            cursorX += bw + 0.025;
+          } else {
+            // Random gap occasionally for natural library look
+            if (Math.random() < 0.08 && cursorX < innerWidth / 2 - 0.4) {
+              cursorX += 0.14 + Math.random() * 0.15;
+              continue;
+            }
+            const bw = 0.065 + Math.random() * 0.065;
+            const bh = Math.min(shelfSpacing - 0.16, 0.36 + Math.random() * 0.24);
+            const bd = 0.34 + Math.random() * 0.1;
+            const col = decorativeBookColors[Math.floor(Math.random() * decorativeBookColors.length)];
+            const bookMesh = createBookMesh(bw, bh, bd, col, '#c99b42', null);
+            bookMesh.position.set(cursorX + bw / 2, shelfY + 0.03 + bh / 2, 0.04 + (Math.random() - 0.5) * 0.04);
+
+            // Occasional subtle lean
+            if (Math.random() < 0.08 && cursorX + bw + 0.15 < innerWidth / 2) {
+              bookMesh.rotation.z = (Math.random() > 0.5 ? 1 : -1) * 0.08;
+            }
+            group.add(bookMesh);
+            cursorX += bw + 0.012;
+          }
+          bookIdxOnShelf++;
+        }
+      }
+
+      scene.add(group);
+      return group;
+    }
+
+    function registerInteractiveBook(mesh, bookIndex, parentGroup, localOutwardNormal) {
+      mesh.userData = {
+        type: 'book',
+        bookIndex,
+        baseLocalPos: mesh.position.clone(),
+        outwardNormal: localOutwardNormal.clone(),
+        hoverProgress: 0,
+        parentGroup
+      };
+      interactiveBooks.push(mesh);
+    }
+
+    function populateLibraryShelves() {
+      // West Wall: 3 tall grand bookshelves (facing +X, rotY = Math.PI/2)
+      buildBookshelfUnit(-7.52, -4.4, Math.PI / 2, 4.0, 6.9, 7, [
+        { shelf: 2, posIndex: 14, bookIndex: 0 }, // Atlas of Nocturnal Spheres
+        { shelf: 3, posIndex: 8, bookIndex: 1 }   // Flora of Shadowed Glasshouse
+      ]);
+      buildBookshelfUnit(-7.52, 0.0, Math.PI / 2, 4.2, 6.9, 7, [
+        { shelf: 2, posIndex: 12, bookIndex: 2 }, // Treatise on Amber & Distillation
+        { shelf: 1, posIndex: 18, bookIndex: 3 }  // Horologist's Secret Pendulum
+      ]);
+      buildBookshelfUnit(-7.52, 4.4, Math.PI / 2, 4.0, 6.9, 7, []);
+
+      // East Wall: 3 tall grand bookshelves (facing -X, rotY = -Math.PI/2)
+      buildBookshelfUnit(7.52, -4.4, -Math.PI / 2, 4.0, 6.9, 7, [
+        { shelf: 2, posIndex: 10, bookIndex: 6 }, // Elegies of the Golden Leaf
+        { shelf: 3, posIndex: 16, bookIndex: 7 }  // Harmonics of Wood & Catgut
+      ]);
+      buildBookshelfUnit(7.52, 0.0, -Math.PI / 2, 4.2, 6.9, 7, [
+        { shelf: 2, posIndex: 15, bookIndex: 8 }, // Compendium of Winged Curiosities
+        { shelf: 1, posIndex: 9, bookIndex: 9 }   // Venetian Glassmaker's Ledger
+      ]);
+      buildBookshelfUnit(7.52, 4.4, -Math.PI / 2, 4.0, 6.9, 7, []);
+
+      // North Wall: Flanking shelves left & right of the tall arched window (facing +Z, rotY = 0)
+      buildBookshelfUnit(-4.6, -7.52, 0, 3.6, 6.9, 7, [
+        { shelf: 2, posIndex: 12, bookIndex: 10 } // Lantern of Epictetus
+      ]);
+      buildBookshelfUnit(4.6, -7.52, 0, 3.6, 6.9, 7, [
+        { shelf: 2, posIndex: 11, bookIndex: 11 } // Grand Eclipse Almanac
+      ]);
+    }
+
+    /* =========================================================================
+       9. FURNITURE, PROPS, BANKER'S LAMP, CHANDELIER & ROLLING LADDER
+       ========================================================================= */
+    let bankerLampLight, bankerLampShadeMat;
+    let chandelierLight, chandelierBulbs = [];
+
+    function buildReadingDeskArea() {
+      const deskGroup = new THREE.Group();
+      deskGroup.position.set(0, 0, 0.85);
+
+      // Desk Top
+      const top = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.14, 1.55), matMahogany);
+      top.position.set(0, 1.05, 0);
+      top.castShadow = true;
+      top.receiveShadow = true;
+      deskGroup.add(top);
+
+      // Green Leather Desk Blotter
+      const blotter = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.015, 0.92), matGreenBlotter);
+      blotter.position.set(0, 1.125, 0.05);
+      blotter.receiveShadow = true;
+      deskGroup.add(blotter);
+
+      // Left & Right Drawer Pedestals
+      const pedGeo = new THREE.BoxGeometry(0.76, 1.0, 1.38);
+      const leftPed = new THREE.Mesh(pedGeo, matWalnut);
+      leftPed.position.set(-1.05, 0.5, 0);
+      leftPed.castShadow = true;
+      const rightPed = new THREE.Mesh(pedGeo, matWalnut);
+      rightPed.position.set(1.05, 0.5, 0);
+      rightPed.castShadow = true;
+      deskGroup.add(leftPed, rightPed);
+
+      // Brass Drawer Pulls
+      [-1.05, 1.05].forEach(px => {
+        [0.28, 0.54, 0.8].forEach(py => {
+          const handle = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.05), matBrass);
+          handle.position.set(px, py, 0.71);
+          deskGroup.add(handle);
+        });
+      });
+
+      // Open Antique Ledger on the Blotter
+      const leftPage = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.025, 0.48), matParchment);
+      leftPage.position.set(-0.19, 1.145, 0.08);
+      leftPage.rotation.z = -0.04;
+      const rightPage = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.025, 0.48), matParchment);
+      rightPage.position.set(0.19, 1.145, 0.08);
+      rightPage.rotation.z = 0.04;
+      deskGroup.add(leftPage, rightPage);
+
+      // Brass Inkwell & Quill
+      const inkwell = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.07, 12), matBrass);
+      inkwell.position.set(0.56, 1.16, -0.18);
+      deskGroup.add(inkwell);
+
+      const quill = new THREE.Mesh(new THREE.ConeGeometry(0.015, 0.34, 6), matParchment);
+      quill.position.set(0.58, 1.3, -0.18);
+      quill.rotation.z = -0.35;
+      deskGroup.add(quill);
+
+      // 2 Special Curated Books resting right on the Reading Desk!
+      // Book 4: Letters on Solitude & Quietude
+      const deskBook1 = createBookMesh(0.11, 0.46, 0.34, CURATED_BOOKS[4].color, CURATED_BOOKS[4].accent, 4);
+      deskBook1.position.set(1.06, 1.12 + 0.055, 0.12);
+      deskBook1.rotation.set(0, -0.4, Math.PI / 2); // Lying flat with spine facing outward
+      deskGroup.add(deskBook1);
+      registerInteractiveBook(deskBook1, 4, deskGroup, new THREE.Vector3(0, 1, 0));
+
+      // Book 5: Charts of the Phantom Archipelagos
+      const deskBook2 = createBookMesh(0.11, 0.48, 0.36, CURATED_BOOKS[5].color, CURATED_BOOKS[5].accent, 5);
+      deskBook2.position.set(1.02, 1.12 + 0.165, 0.1);
+      deskBook2.rotation.set(0, -0.15, Math.PI / 2);
+      deskGroup.add(deskBook2);
+      registerInteractiveBook(deskBook2, 5, deskGroup, new THREE.Vector3(0, 1, 0));
+
+      // Glowing Emerald-Green Banker's Lamp (Interactive!)
+      const lampGroup = new THREE.Group();
+      lampGroup.position.set(-1.05, 1.12, -0.25);
+
+      const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.05, 20), matBrass);
+      lampBase.position.y = 0.025;
+      const lampStem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.024, 0.46, 12), matBrass);
+      lampStem.position.y = 0.25;
+
+      bankerLampShadeMat = matEmeraldGlass.clone();
+      const lampShade = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.14, 0.36, 16, 1, false, 0, Math.PI),
+        bankerLampShadeMat
+      );
+      lampShade.rotation.z = Math.PI / 2;
+      lampShade.rotation.y = 0.4;
+      lampShade.position.set(0.04, 0.48, 0.04);
+
+      lampGroup.add(lampBase, lampStem, lampShade);
+
+      // Register lamp parts for click interaction
+      [lampBase, lampStem, lampShade].forEach(part => {
+        part.userData = { type: 'lamp', title: "Emerald Banker's Lamp", sub: 'Click to toggle desk light' };
+        interactiveProps.push(part);
+      });
+
+      bankerLampLight = new THREE.PointLight('#ffcf75', 3.4, 7.5, 1.7);
+      bankerLampLight.position.set(0.06, 0.36, 0.06);
+      bankerLampLight.castShadow = true;
+      bankerLampLight.shadow.bias = -0.002;
+      lampGroup.add(bankerLampLight);
+
+      deskGroup.add(lampGroup);
+      scene.add(deskGroup);
+
+      // Antique Tufted Leather Armchair behind the desk
+      buildArmchair(0, -0.55, 0);
+    }
+
+    function buildArmchair(x, z, rotY) {
+      const chair = new THREE.Group();
+      chair.position.set(x, 0, z);
+      chair.rotation.y = rotY;
+
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.22, 0.95), matLeatherBurgundy);
+      seat.position.set(0, 0.52, 0);
+      seat.castShadow = true;
+
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 0.2), matLeatherBurgundy);
+      back.position.set(0, 1.05, -0.4);
+      back.rotation.x = -0.12;
+      back.castShadow = true;
+
+      const armGeo = new THREE.BoxGeometry(0.18, 0.42, 0.95);
+      const leftArm = new THREE.Mesh(armGeo, matLeatherBurgundy);
+      leftArm.position.set(-0.52, 0.72, 0);
+      const rightArm = new THREE.Mesh(armGeo, matLeatherBurgundy);
+      rightArm.position.set(0.52, 0.72, 0);
+
+      const legGeo = new THREE.CylinderGeometry(0.04, 0.025, 0.44, 10);
+      [[-0.44, -0.38], [0.44, -0.38], [-0.44, 0.38], [0.44, 0.38]].forEach(([lx, lz]) => {
+        const leg = new THREE.Mesh(legGeo, matWalnut);
+        leg.position.set(lx, 0.22, lz);
+        chair.add(leg);
+      });
+
+      chair.add(seat, back, leftArm, rightArm);
+      scene.add(chair);
+    }
+
+    function buildRollingLadder() {
+      const ladder = new THREE.Group();
+      ladder.position.set(-6.75, 0, 2.8);
+      ladder.rotation.y = Math.PI / 2;
+      ladder.rotation.x = -0.17; // Leaning cleanly against West shelf
+
+      const railGeo = new THREE.BoxGeometry(0.06, 5.8, 0.09);
+      const leftRail = new THREE.Mesh(railGeo, matMahogany);
+      leftRail.position.set(-0.26, 2.9, 0);
+      const rightRail = new THREE.Mesh(railGeo, matMahogany);
+      rightRail.position.set(0.26, 2.9, 0);
+      ladder.add(leftRail, rightRail);
+
+      // Rungs
+      for (let y = 0.45; y < 5.4; y += 0.45) {
+        const rung = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 0.07), matMahogany);
+        rung.position.set(0, y, 0);
+        ladder.add(rung);
+      }
+
+      // Brass Hooks at the top
+      [-0.26, 0.26].forEach(hx => {
+        const hook = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.015, 8, 16, Math.PI), matBrass);
+        hook.position.set(hx, 5.75, -0.05);
+        hook.rotation.y = Math.PI / 2;
+        ladder.add(hook);
+      });
+
+      scene.add(ladder);
+    }
+
+    function buildStandingGlobe() {
+      const globeGroup = new THREE.Group();
+      globeGroup.position.set(3.8, 0, -4.4);
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 0.14, 20), matWalnut);
+      base.position.y = 0.07;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 1.05, 14), matWalnut);
+      post.position.y = 0.62;
+
+      const meridian = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.02, 10, 32), matBrass);
+      meridian.position.y = 1.52;
+
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.41, 28, 28),
+        new THREE.MeshStandardMaterial({ map: createGlobeTexture(), roughness: 0.5, metalness: 0.1 })
+      );
+      sphere.position.y = 1.52;
+      sphere.rotation.z = 0.41; // Earth axial tilt
+      sphere.castShadow = true;
+
+      globeGroup.add(base, post, meridian, sphere);
+      scene.add(globeGroup);
+
+      return sphere;
+    }
+
+    function buildFramedArtAndCandles() {
+      // Two framed vintage paintings on the South-West & South-East upper walls
+      const createPainting = (x, y, z, rotY, theme) => {
+        const frameGroup = new THREE.Group();
+        frameGroup.position.set(x, y, z);
+        frameGroup.rotation.y = rotY;
+
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.7, 2.15, 0.1), matBrass);
+        const canvasMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.48, 1.92),
+          new THREE.MeshStandardMaterial({ map: createPaintingTexture(theme), roughness: 0.6 })
+        );
+        canvasMesh.position.z = 0.055;
+        frameGroup.add(frame, canvasMesh);
+        scene.add(frameGroup);
+      };
+
+      createPainting(-3.6, 3.8, 7.86, Math.PI, 'celestial');
+      createPainting(3.6, 3.8, 7.86, Math.PI, 'landscape');
+
+      // Decorative Side Table with Flickering Candles near the West Alcove
+      const table = new THREE.Group();
+      table.position.set(-4.1, 0, -4.2);
+      const tTop = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 24), matMahogany);
+      tTop.position.y = 0.95;
+      const tLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.92, 12), matWalnut);
+      tLeg.position.y = 0.46;
+      const tBase = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.06, 18), matWalnut);
+      tBase.position.y = 0.03;
+      table.add(tTop, tLeg, tBase);
+
+      // Pair of Wax Candles on Brass Holders
+      [[-0.14, 0.24, 0.05], [0.12, 0.18, -0.08]].forEach(([cx, ch, cz]) => {
+        const holder = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.04, 14), matBrass);
+        holder.position.set(cx, 1.0, cz);
+        const wax = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.035, ch, 12), matParchment);
+        wax.position.set(cx, 1.02 + ch / 2, cz);
+
+        const flameMat = new THREE.MeshBasicMaterial({ color: '#ffdf88' });
+        const flame = new THREE.Mesh(new THREE.SphereGeometry(0.026, 8, 8), flameMat);
+        flame.scale.set(0.7, 1.5, 0.7);
+        flame.position.set(cx, 1.04 + ch, cz);
+        candleFlames.push({ mesh: flame, baseY: flame.position.y, phase: Math.random() * 10 });
+
+        table.add(holder, wax, flame);
+      });
+
+      const candleLight = new THREE.PointLight('#ffaa44', 1.6, 6.5, 2);
+      candleLight.position.set(0, 1.45, 0);
+      table.add(candleLight);
+      candleFlames.push({ light: candleLight, baseIntensity: 1.6, phase: 2.1 });
+
+      scene.add(table);
+    }
+
+    function buildChandelier() {
+      const chGroup = new THREE.Group();
+      chGroup.position.set(0, 7.1, 0.2);
+
+      // Suspension chain/rod
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.4, 10), matBrass);
+      rod.position.y = 1.2;
+      chGroup.add(rod);
+
+      // Main Brass Ring
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.055, 12, 36), matBrass);
+      ring.rotation.x = Math.PI / 2;
+      chGroup.add(ring);
+
+      // Central Finial
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), matBrass);
+      chGroup.add(finial);
+
+      // 8 Radial Arms with Candle Bulbs
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const ax = Math.cos(angle) * 1.35;
+        const az = Math.sin(angle) * 1.35;
+
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.04, 0.04), matBrass);
+        arm.position.set(ax * 0.5, 0, az * 0.5);
+        arm.rotation.y = -angle;
+        chGroup.add(arm);
+
+        const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.22, 10), matParchment);
+        candle.position.set(ax, 0.14, az);
+        chGroup.add(candle);
+
+        const bulbMat = new THREE.MeshBasicMaterial({ color: '#ffe5a3' });
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), bulbMat);
+        bulb.scale.set(0.8, 1.4, 0.8);
+        bulb.position.set(ax, 0.29, az);
+        chGroup.add(bulb);
+        chandelierBulbs.push(bulb);
+      }
+
+      // Clickable collider sphere for easy chandelier toggling
+      const hitMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.5, 0.6, 16),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      hitMesh.userData = { type: 'chandelier', title: 'Brass Candle Chandelier', sub: 'Click to toggle chandelier candles' };
+      chGroup.add(hitMesh);
+      interactiveProps.push(hitMesh);
+
+      chandelierLight = new THREE.PointLight('#ffbd66', 4.8, 18, 1.5);
+      chandelierLight.position.set(0, -0.3, 0);
+      chandelierLight.castShadow = true;
+      chandelierLight.shadow.bias = -0.002;
+      chGroup.add(chandelierLight);
+
+      scene.add(chGroup);
+    }
+
+    /* =========================================================================
+       10. AMBIENT LIGHTING & FLOATING GOLDEN DUST MOTES
+       ========================================================================= */
+    const ambientLight = new THREE.AmbientLight('#43384f', 0.65);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight('#5c72a8', '#2a1a10', 0.45);
+    scene.add(hemiLight);
+
+    // Directional Moon / Sun Light streaming through the North arched window
+    const windowDirLight = new THREE.DirectionalLight('#7fa4ff', 1.55);
+    windowDirLight.position.set(0.6, 6.2, -10.5);
+    windowDirLight.target.position.set(0, 1.0, 2.5);
+    windowDirLight.castShadow = true;
+    windowDirLight.shadow.mapSize.set(1024, 1024);
+    windowDirLight.shadow.camera.near = 1;
+    windowDirLight.shadow.camera.far = 24;
+    windowDirLight.shadow.camera.left = -8;
+    windowDirLight.shadow.camera.right = 8;
+    windowDirLight.shadow.camera.top = 8;
+    windowDirLight.shadow.camera.bottom = -4;
+    scene.add(windowDirLight, windowDirLight.target);
+
+    // Drifting Golden Dust Motes
+    const dustCount = 420;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPositions = new Float32Array(dustCount * 3);
+    const dustSpeeds = new Float32Array(dustCount);
+
+    for (let i = 0; i < dustCount; i++) {
+      dustPositions[i * 3] = (Math.random() - 0.5) * 14;
+      dustPositions[i * 3 + 1] = 0.4 + Math.random() * 7.8;
+      dustPositions[i * 3 + 2] = (Math.random() - 0.5) * 14;
+      dustSpeeds[i] = 0.08 + Math.random() * 0.16;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+
+    const dustMat = new THREE.PointsMaterial({
+      map: createDustParticleTexture(),
+      size: 0.12,
+      transparent: true,
+      opacity: 0.62,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const dustParticles = new THREE.Points(dustGeo, dustMat);
+    scene.add(dustParticles);
+
+    /* =========================================================================
+       11. LIGHTING MOOD & PROP TOGGLES
+       ========================================================================= */
+    function applyLightingMood(mood) {
+      state.mood = mood;
+      const isMidnight = mood === 'midnight';
+
+      if (isMidnight) {
+        scene.background.set('#0b090e');
+        scene.fog.color.set('#110d14');
+        scene.fog.density = 0.032;
+        ambientLight.color.set('#403854');
+        ambientLight.intensity = 0.62;
+        hemiLight.color.set('#5874b8');
+        hemiLight.groundColor.set('#26180f');
+        hemiLight.intensity = 0.45;
+        windowDirLight.color.set('#80a8ff');
+        windowDirLight.intensity = 1.6;
+        windowSkyMat.color.set('#18284d');
+        lightShafts.forEach(s => {
+          s.material.color.set('#88b2ff');
+          s.material.opacity = 0.055;
+        });
+        dustMat.color.set('#ffe4a3');
+        dustMat.opacity = 0.55;
+      } else {
+        // Golden Afternoon
+        scene.background.set('#24180e');
+        scene.fog.color.set('#2e1f12');
+        scene.fog.density = 0.022;
+        ambientLight.color.set('#8f6c43');
+        ambientLight.intensity = 0.85;
+        hemiLight.color.set('#ffd99e');
+        hemiLight.groundColor.set('#472c18');
+        hemiLight.intensity = 0.72;
+        windowDirLight.color.set('#ffcf78');
+        windowDirLight.intensity = 2.9;
+        windowSkyMat.color.set('#f5cb7a');
+        lightShafts.forEach(s => {
+          s.material.color.set('#ffd685');
+          s.material.opacity = 0.095;
+        });
+        dustMat.color.set('#fff1c7');
+        dustMat.opacity = 0.78;
+      }
+
+      document.getElementById('mood-icon').textContent = isMidnight ? '🌙' : '☀️';
+      document.getElementById('mood-label').textContent = isMidnight ? 'Candlelit Midnight' : 'Golden Afternoon';
+    }
+
+    function toggleBankerLamp() {
+      state.lampOn = !state.lampOn;
+      bankerLampLight.intensity = state.lampOn ? 3.4 : 0;
+      bankerLampShadeMat.emissiveIntensity = state.lampOn ? 0.9 : 0.06;
+      audioEngine.playSwitchClick();
+      showToast(state.lampOn ? "Banker's Lamp Illuminated" : "Banker's Lamp Dimmed");
+    }
+
+    function toggleChandelier() {
+      state.chandelierOn = !state.chandelierOn;
+      chandelierLight.intensity = state.chandelierOn ? 4.8 : 0;
+      chandelierBulbs.forEach(b => b.visible = state.chandelierOn);
+      audioEngine.playSwitchClick();
+      showToast(state.chandelierOn ? 'Chandelier Candles Lit' : 'Chandelier Extinguished');
+    }
+
+    /* =========================================================================
+       12. SMOOTH CAMERA FLIGHT & ROOM BOUNDARY CLAMPING
+       ========================================================================= */
+    function flyCameraTo(targetPos, targetLookAt, duration = 1150, onComplete = null) {
+      state.cameraAnim = {
+        startPos: camera.position.clone(),
+        endPos: targetPos.clone(),
+        startTarget: controls.target.clone(),
+        endTarget: targetLookAt.clone(),
+        startTime: performance.now(),
+        duration,
+        onComplete
+      };
+    }
+
+    function clampCameraInsideRoom() {
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -6.7, 6.7);
+      camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.15, 8.3);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -6.6, 6.9);
+
+      controls.target.x = THREE.MathUtils.clamp(controls.target.x, -7.4, 7.4);
+      controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0.6, 6.8);
+      controls.target.z = THREE.MathUtils.clamp(controls.target.z, -7.4, 7.4);
+    }
+
+    function flyToBook(bookIndex, openModalAfter = true) {
+      const bookMesh = interactiveBooks.find(b => b.userData.bookIndex === bookIndex);
+      if (!bookMesh) return;
+
+      // Save current camera position if not already viewing a book
+      if (state.activeBookIndex === null) {
+        state.preBookCamera = {
+          pos: camera.position.clone(),
+          target: controls.target.clone()
+        };
+      }
+
+      const worldPos = new THREE.Vector3();
+      bookMesh.getWorldPosition(worldPos);
+
+      // Compute outward direction in world space so camera stands right in front of the book
+      const worldQuat = new THREE.Quaternion();
+      bookMesh.userData.parentGroup.getWorldQuaternion(worldQuat);
+      const outward = bookMesh.userData.outwardNormal.clone().applyQuaternion(worldQuat).normalize();
+
+      let camEndPos;
+      if (outward.y > 0.7) {
+        // Desk book lying flat: hover slightly above & in front
+        camEndPos = worldPos.clone().add(new THREE.Vector3(0.6, 0.95, 1.15));
+      } else {
+        // Shelf book: position 1.55 units straight in front of the spine
+        camEndPos = worldPos.clone().addScaledVector(outward, 1.65);
+        camEndPos.y = Math.max(1.3, worldPos.y + 0.08);
+      }
+
+      // Clamp target camera position within room
+      camEndPos.x = THREE.MathUtils.clamp(camEndPos.x, -6.4, 6.4);
+      camEndPos.z = THREE.MathUtils.clamp(camEndPos.z, -6.4, 6.4);
+
+      flyCameraTo(camEndPos, worldPos, 1050, () => {
+        if (openModalAfter) {
+          openBookModal(bookIndex);
+        }
+      });
+    }
+
+    /* =========================================================================
+       13. RAYCASTING (HOVER & CLICK INTERACTIONS)
+       ========================================================================= */
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+
+    const tooltipEl = document.getElementById('hover-tooltip');
+    const tooltipKicker = document.getElementById('tooltip-kicker');
+    const tooltipTitle = document.getElementById('tooltip-title');
+    const tooltipSub = document.getElementById('tooltip-sub');
+
+    function updatePointer(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      if (state.activeBookIndex !== null) {
+        hideTooltip();
+        return;
+      }
+      updatePointer(e);
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects([...interactiveBooks, ...interactiveProps], false);
+      if (hits.length > 0) {
+        const hitObj = hits[0].object;
+        state.hoveredObject = hitObj;
+        renderer.domElement.style.cursor = 'pointer';
+
+        if (hitObj.userData.type === 'book') {
+          const book = CURATED_BOOKS[hitObj.userData.bookIndex];
+          tooltipKicker.textContent = `${book.genre} • ${book.year}`;
+          tooltipTitle.textContent = book.title;
+          tooltipSub.textContent = `by ${book.author} — Click to read`;
+        } else {
+          tooltipKicker.textContent = 'Interactive Fixture';
+          tooltipTitle.textContent = hitObj.userData.title;
+          tooltipSub.textContent = hitObj.userData.sub;
+        }
+        tooltipEl.style.left = `${e.clientX}px`;
+        tooltipEl.style.top = `${e.clientY}px`;
+        tooltipEl.classList.remove('fade-hidden');
+      } else {
+        state.hoveredObject = null;
+        renderer.domElement.style.cursor = 'grab';
+        hideTooltip();
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+      // Cancel ongoing automatic flight if user manually grabs the camera
+      if (state.cameraAnim && state.activeBookIndex === null) {
+        state.cameraAnim = null;
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      if (dist > 7 || state.activeBookIndex !== null) return; // Ignore drag orbits
+
+      updatePointer(e);
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects([...interactiveBooks, ...interactiveProps], false);
+      if (hits.length > 0) {
+        const hitObj = hits[0].object;
+        if (hitObj.userData.type === 'book') {
+          hideTooltip();
+          audioEngine.playBookChime();
+          flyToBook(hitObj.userData.bookIndex, true);
+        } else if (hitObj.userData.type === 'lamp') {
+          toggleBankerLamp();
+        } else if (hitObj.userData.type === 'chandelier') {
+          toggleChandelier();
+        }
+      }
+    });
+
+    function hideTooltip() {
+      tooltipEl.classList.add('fade-hidden');
+    }
+
+    /* =========================================================================
+       14. UI CONTROLLERS: BOOK READER MODAL, CATALOG & TOASTS
+       ========================================================================= */
+    const bookModal = document.getElementById('book-modal');
+    let toastTimer = null;
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-message').textContent = msg;
+      box.classList.remove('fade-hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => box.classList.add('fade-hidden'), 2400);
+    }
+
+    function openBookModal(index) {
+      state.activeBookIndex = index;
+      const book = CURATED_BOOKS[index];
+
+      // Mark discovered
+      if (!state.discoveredIds.has(book.id)) {
+        state.discoveredIds.add(book.id);
+        updateDiscoveryHUD();
+      }
+
+      document.getElementById('modal-wing').textContent = book.wing;
+      document.getElementById('modal-genre').textContent = book.genre;
+      document.getElementById('modal-year').textContent = book.year;
+      document.getElementById('modal-title').textContent = book.title;
+      document.getElementById('modal-author').textContent = `by ${book.author}`;
+      document.getElementById('modal-synopsis').textContent = book.synopsis;
+      document.getElementById('modal-color-swatch').style.backgroundColor = book.color;
+      document.getElementById('modal-index').textContent = `Volume ${index + 1} of ${CURATED_BOOKS.length}`;
+
+      const excerptEl = document.getElementById('modal-excerpt');
+      excerptEl.innerHTML = '';
+      book.excerpt.forEach((para, idx) => {
+        const p = document.createElement('p');
+        p.textContent = para;
+        if (idx === 0) p.className = 'drop-cap';
+        excerptEl.appendChild(p);
+      });
+
+      updateBookmarkButton(book.id);
+      renderCatalog();
+      bookModal.classList.remove('fade-hidden');
+    }
+
+    function closeBookModal() {
+      if (state.activeBookIndex === null) return;
+      bookModal.classList.add('fade-hidden');
+      state.activeBookIndex = null;
+
+      if (state.preBookCamera) {
+        flyCameraTo(state.preBookCamera.pos, state.preBookCamera.target, 950);
+        state.preBookCamera = null;
+      }
+    }
+
+    function updateBookmarkButton(bookId) {
+      const saved = state.bookmarkedIds.has(bookId);
+      document.getElementById('bookmark-star').textContent = saved ? '★' : '☆';
+      document.getElementById('bookmark-text').textContent = saved ? 'Bookmarked' : 'Bookmark';
+    }
+
+    function updateDiscoveryHUD() {
+      document.getElementById('discovered-count').textContent = `${state.discoveredIds.size} / ${CURATED_BOOKS.length}`;
+      document.getElementById('catalog-bookmark-count').textContent = `★ ${state.bookmarkedIds.size} Saved`;
+    }
+
+    function renderCatalog() {
+      const list = document.getElementById('catalog-list');
+      list.innerHTML = '';
+
+      CURATED_BOOKS.forEach((book, index) => {
+        const isDiscovered = state.discoveredIds.has(book.id);
+        const isBookmarked = state.bookmarkedIds.has(book.id);
+
+        const item = document.createElement('button');
+        item.className = 'w-full text-left p-3 rounded-xl bg-espresso-900/75 hover:bg-espresso-800/90 border border-gold-500/20 hover:border-gold-400/60 transition flex items-start gap-3 cursor-pointer';
+        item.innerHTML = `
+          <div class="w-2.5 self-stretch rounded-full shrink-0 mt-0.5" style="background:${book.color}; border: 1px solid ${book.accent};"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-display uppercase tracking-widest text-gold-400/90">${book.wing}</span>
+              <span class="text-xs">${isBookmarked ? '<span class="text-gold-300" title="Bookmarked">★</span>' : ''} ${isDiscovered ? '<span class="text-emerald-400 text-[10px] font-display">READ</span>' : ''}</span>
+            </div>
+            <div class="font-serif text-sm sm:text-base text-parchment-50 font-medium truncate mt-0.5">${book.title}</div>
+            <div class="text-xs italic text-parchment-200/70 truncate">${book.author} (${book.year})</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          toggleCatalog(false);
+          audioEngine.playBookChime();
+          flyToBook(index, true);
+        });
+        list.appendChild(item);
+      });
+    }
+
+    function toggleCatalog(forceState = null) {
+      state.catalogOpen = forceState !== null ? forceState : !state.catalogOpen;
+      const drawer = document.getElementById('catalog-drawer');
+      drawer.style.transform = state.catalogOpen ? 'translateX(0)' : 'translateX(100%)';
+    }
+
+    /* =========================================================================
+       15. WIRE UP UI EVENT LISTENERS
+       ========================================================================= */
+    document.getElementById('enter-btn').addEventListener('click', () => {
+      const overlay = document.getElementById('intro-overlay');
+      overlay.classList.add('fade-hidden');
+      setTimeout(() => overlay.style.display = 'none', 750);
+    });
+
+    document.getElementById('btn-mood').addEventListener('click', () => {
+      applyLightingMood(state.mood === 'midnight' ? 'afternoon' : 'midnight');
+      showToast(state.mood === 'midnight' ? 'Switched to Candlelit Midnight' : 'Switched to Golden Afternoon');
+    });
+
+    document.getElementById('btn-highlight').addEventListener('click', (e) => {
+      state.highlightCurated = !state.highlightCurated;
+      e.currentTarget.classList.toggle('active', state.highlightCurated);
+      showToast(state.highlightCurated ? 'Highlighting all 12 Curated Tomes' : 'Tome Highlights Hidden');
+    });
+
+    document.getElementById('btn-audio').addEventListener('click', (e) => {
+      state.audioEnabled = !state.audioEnabled;
+      audioEngine.toggle(state.audioEnabled);
+      e.currentTarget.classList.toggle('active', state.audioEnabled);
+      document.getElementById('audio-icon').textContent = state.audioEnabled ? '🔊' : '🔇';
+      document.getElementById('audio-label').textContent = state.audioEnabled ? 'Ambience On' : 'Ambience Off';
+    });
+
+    document.getElementById('btn-catalog').addEventListener('click', () => toggleCatalog());
+    document.getElementById('btn-close-catalog').addEventListener('click', () => toggleCatalog(false));
+
+    document.getElementById('btn-close-book').addEventListener('click', closeBookModal);
+    document.getElementById('btn-prev-book').addEventListener('click', () => {
+      if (state.activeBookIndex === null) return;
+      const prevIdx = (state.activeBookIndex - 1 + CURATED_BOOKS.length) % CURATED_BOOKS.length;
+      bookModal.classList.add('fade-hidden');
+      audioEngine.playBookChime();
+      flyToBook(prevIdx, true);
+    });
+    document.getElementById('btn-next-book').addEventListener('click', () => {
+      if (state.activeBookIndex === null) return;
+      const nextIdx = (state.activeBookIndex + 1) % CURATED_BOOKS.length;
+      bookModal.classList.add('fade-hidden');
+      audioEngine.playBookChime();
+      flyToBook(nextIdx, true);
+    });
+
+    document.getElementById('btn-bookmark').addEventListener('click', () => {
+      if (state.activeBookIndex === null) return;
+      const book = CURATED_BOOKS[state.activeBookIndex];
+      if (state.bookmarkedIds.has(book.id)) {
+        state.bookmarkedIds.delete(book.id);
+        showToast('Removed from Bookmarks');
+      } else {
+        state.bookmarkedIds.add(book.id);
+        showToast(`Bookmarked "${book.title}"`);
+      }
+      updateBookmarkButton(book.id);
+      updateDiscoveryHUD();
+      renderCatalog();
+    });
+
+    // Quick Viewpoint Buttons
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (state.activeBookIndex !== null) closeBookModal();
+        const key = btn.dataset.view;
+        const vp = VIEWPOINTS[key];
+        if (!vp) return;
+
+        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        flyCameraTo(vp.pos, vp.target, 1100);
+      });
+    });
+
+    // Keyboard Escape to close modal or catalog
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (state.activeBookIndex !== null) closeBookModal();
+        else if (state.catalogOpen) toggleCatalog(false);
+      }
+    });
+
+    // Responsive Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* =========================================================================
+       16. ASSEMBLE SCENE & RUN ANIMATION LOOP
+       ========================================================================= */
+    buildRoom();
+    populateLibraryShelves();
+    buildReadingDeskArea();
+    buildRollingLadder();
+    const globeMesh = buildStandingGlobe();
+    buildFramedArtAndCandles();
+    buildChandelier();
+    applyLightingMood('midnight');
+    renderCatalog();
+    updateDiscoveryHUD();
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      const delta = Math.min(clock.getDelta(), 0.05);
+
+      // 1. Smooth Camera Flight Interpolation
+      if (state.cameraAnim) {
+        const anim = state.cameraAnim;
+        const t = Math.min((performance.now() - anim.startTime) / anim.duration, 1);
+        // Cubic Ease In-Out
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        camera.position.lerpVectors(anim.startPos, anim.endPos, ease);
+        controls.target.lerpVectors(anim.startTarget, anim.endTarget, ease);
+
+        if (t >= 1) {
+          const cb = anim.onComplete;
+          state.cameraAnim = null;
+          if (cb) cb();
+        }
+      }
+
+      controls.update();
+      clampCameraInsideRoom();
+
+      // 2. Interactive Books Hover Slide & Golden Emissive Glint
+      const highlightPulse = state.highlightCurated ? (0.45 + Math.sin(elapsed * 3.2) * 0.25) : 0.06;
+      for (let i = 0; i < interactiveBooks.length; i++) {
+        const book = interactiveBooks[i];
+        const isHovered = state.hoveredObject === book;
+        const targetHover = isHovered ? 1 : 0;
+        book.userData.hoverProgress += (targetHover - book.userData.hoverProgress) * 0.14;
+
+        const slideDist = book.userData.outwardNormal.y > 0.7 ? 0.06 : 0.14;
+        book.position.copy(book.userData.baseLocalPos).addScaledVector(
+          book.userData.outwardNormal,
+          book.userData.hoverProgress * slideDist
+        );
+
+        // Spine material is index 4
+        const spineMat = book.material[4];
+        const targetEmissive = isHovered ? 0.85 : highlightPulse;
+        spineMat.emissiveIntensity += (targetEmissive - spineMat.emissiveIntensity) * 0.12;
+      }
+
+      // 3. Drifting Golden Dust Motes
+      const posAttr = dustGeo.attributes.position;
+      for (let i = 0; i < dustCount; i++) {
+        let y = posAttr.getY(i) + dustSpeeds[i] * delta;
+        let x = posAttr.getX(i) + Math.sin(elapsed * 0.4 + i) * 0.0018;
+        if (y > 8.4) y = 0.4;
+        posAttr.setXY(i, x, y);
+      }
+      posAttr.needsUpdate = true;
+
+      // 4. Subtle Candlelight Flicker
+      for (const c of candleFlames) {
+        const flicker = Math.sin(elapsed * 9 + c.phase) * 0.08 + Math.sin(elapsed * 17 + c.phase) * 0.05;
+        if (c.mesh) {
+          c.mesh.scale.set(0.7 + flicker * 0.3, 1.5 + flicker, 0.7 + flicker * 0.3);
+        }
+        if (c.light) {
+          c.light.intensity = c.baseIntensity + flicker * 1.2;
+        }
+      }
+      if (state.chandelierOn) {
+        chandelierLight.intensity = 4.8 + Math.sin(elapsed * 6.5) * 0.18 + Math.sin(elapsed * 13) * 0.08;
+      }
+
+      // 5. Gentle Antique Globe Rotation
+      if (globeMesh) {
+        globeMesh.rotation.y += delta * 0.08;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('load', () => {
+      animate();
+    });
+  </script>
+</body>
+</html>
