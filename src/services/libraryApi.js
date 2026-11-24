@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '../config/api.js';
 
 let ownerTokenForRequest = '';
 
@@ -13,7 +14,7 @@ export function getLibraryOwnerToken() {
 export const libraryApi = createApi({
   reducerPath: 'libraryApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/',
+    baseUrl: API_BASE_URL,
     credentials: 'include',
     prepareHeaders(headers, { endpoint }) {
       if (endpoint === 'uploadBook' && ownerTokenForRequest) {

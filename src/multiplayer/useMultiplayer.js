@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiUrl } from '../config/api.js';
 
 const IDENTITY_KEY = 'athenaeum-multiplayer-identity-v1';
 
@@ -50,7 +51,7 @@ export function useMultiplayer() {
     const id = identity.id;
 
     async function postJson(path, body, keepalive = false) {
-      const response = await fetch(path, {
+      const response = await fetch(apiUrl(path), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -110,13 +111,13 @@ export function useMultiplayer() {
     async function connect() {
       try {
         setStatus('connecting');
-        const joined = await postJson('/api/multiplayer/join', identityRef.current);
+        const joined = await postJson('multiplayer/join', identityRef.current);
         if (!active) return;
         lastJoinAt = Date.now();
         setError('');
         applyPlayers(joined.players ?? []);
         setMessages(joined.messages ?? []);
-        source = new EventSource(`/api/multiplayer/stream?id=${encodeURIComponent(id)}`, { withCredentials: true });
+        source = new EventSource(apiUrl(`multiplayer/stream?id=${encodeURIComponent(id)}`), { withCredentials: true });
         source.addEventListener('snapshot', handleSnapshot);
         source.addEventListener('presence', handlePresence);
         source.addEventListener('pose', handlePose);
@@ -144,7 +145,7 @@ export function useMultiplayer() {
       if (source?.readyState !== EventSource.OPEN) {
         if (!rejoinInFlight && Date.now() - lastJoinAt > 18_000) {
           rejoinInFlight = true;
-          postJson('/api/multiplayer/join', identityRef.current)
+          postJson('multiplayer/join', identityRef.current)
             .then(() => { lastJoinAt = Date.now(); })
             .catch(() => {})
             .finally(() => {
@@ -156,14 +157,14 @@ export function useMultiplayer() {
       }
       if (poseInFlight) return;
       poseInFlight = true;
-      postJson('/api/multiplayer/state', { id, ...latestPoseRef.current })
+      postJson('multiplayer/state', { id, ...latestPoseRef.current })
         .catch(() => {})
         .finally(() => { poseInFlight = false; });
     }, 120);
 
     const handlePageHide = () => {
       if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/multiplayer/leave', new Blob([JSON.stringify({ id })], { type: 'application/json' }));
+        navigator.sendBeacon(apiUrl('multiplayer/leave'), new Blob([JSON.stringify({ id })], { type: 'application/json' }));
       }
       source?.close();
     };
@@ -185,7 +186,7 @@ export function useMultiplayer() {
     setIdentity(nextIdentity);
     setError('');
     try {
-      const joined = await fetch('/api/multiplayer/join', {
+      const joined = await fetch(apiUrl('multiplayer/join'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -207,7 +208,7 @@ export function useMultiplayer() {
   const sendChat = useCallback(async (text) => {
     setError('');
     try {
-      const response = await fetch('/api/multiplayer/chat', {
+      const response = await fetch(apiUrl('multiplayer/chat'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -225,7 +226,7 @@ export function useMultiplayer() {
   const wave = useCallback(async (targetId) => {
     setError('');
     try {
-      const response = await fetch('/api/multiplayer/action', {
+      const response = await fetch(apiUrl('multiplayer/action'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
