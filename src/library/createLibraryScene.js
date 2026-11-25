@@ -1,4 +1,9 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { CURATED_BOOKS, getBookLocation } from './books.js';
 import { FirstPersonController } from './FirstPersonController.js';
 
@@ -21,7 +26,8 @@ const state = {
   townDoorAnimation: null,
   townDoorOpen: false,
   placedBookCount: 0,
-  deskGroup: null
+  deskGroup: null,
+  bloomEnabled: true
 };
 
 const VIEWPOINTS = {
@@ -689,6 +695,26 @@ renderer.domElement.tabIndex = 0;
 renderer.domElement.setAttribute('aria-label', 'Walk through the Grand Athenaeum');
 container.appendChild(renderer.domElement);
 
+// Warm IBL environment reflections for brass, mahogany, glass, and leather
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+const envRT = pmremGenerator.fromScene(new RoomEnvironment(renderer), 0.045);
+scene.environment = envRT.texture;
+pmremGenerator.dispose();
+
+// Subtle post-processing bloom for candlelight, chandelier, and portal glow
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(container.clientWidth || window.innerWidth, container.clientHeight || window.innerHeight),
+  0.22,
+  0.48,
+  0.84
+);
+const outputPass = new OutputPass();
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
+composer.addPass(outputPass);
+
 // Collections for interactive raycasting & animation
 const interactiveBooks = [];
 const interactiveProps = [];
@@ -708,6 +734,9 @@ function registerInteractiveProp(mesh, details) {
 
 function canWalkTo(x, z) {
   const radius = 0.28;
+  if (state.townDoorOpen && Math.abs(x) < 0.82 && z >= 6.0 && z <= 7.95) {
+    return true;
+  }
   if (x < -6.55 + radius || x > 6.55 - radius || z < -6.55 + radius || z > 6.55 - radius) return false;
   return !walkObstacles.some((obstacle) => (
     x + radius > obstacle.minX
@@ -2329,43 +2358,232 @@ function makePlayerNameplate(name) {
 
 function makePlayerAvatar(player) {
   const root = new THREE.Group();
-  const coatMaterial = new THREE.MeshStandardMaterial({ color: playerColor(player.id), roughness: 0.84 });
-  const trouserMaterial = new THREE.MeshStandardMaterial({ color: '#342c28', roughness: 0.91 });
-  const skinMaterial = new THREE.MeshStandardMaterial({ color: '#d7ad8d', roughness: 0.86 });
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.3, 0.78, 9), coatMaterial);
-  torso.position.y = 1.02;
-  torso.castShadow = true;
-  root.add(torso);
+  const coatHex = playerColor(player.id);
+  const coatMat = new THREE.MeshStandardMaterial({ color: coatHex, roughness: 0.78, metalness: 0.04 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: '#f3ebdc', roughness: 0.72 });
+  const tieMat = new THREE.MeshStandardMaterial({ color: '#6e2323', roughness: 0.62 });
+  const trouserMat = new THREE.MeshStandardMaterial({ color: '#2b2623', roughness: 0.86 });
+  const shoeMat = new THREE.MeshStandardMaterial({ color: '#1b1410', roughness: 0.34, metalness: 0.12 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: '#dba986', roughness: 0.68, metalness: 0.02 });
+  const lipMat = new THREE.MeshStandardMaterial({ color: '#b56e61', roughness: 0.62 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: '#332318', roughness: 0.82 });
+  const hatMat = new THREE.MeshStandardMaterial({ color: '#3f2c20', roughness: 0.85 });
+  const beltMat = new THREE.MeshStandardMaterial({ color: '#221712', roughness: 0.45 });
+  const brassMat = new THREE.MeshStandardMaterial({ color: '#d4ab57', roughness: 0.3, metalness: 0.82 });
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), skinMaterial);
-  head.position.y = 1.62;
-  head.castShadow = true;
-  root.add(head);
+  const bodyPivot = new THREE.Group();
+  root.add(bodyPivot);
 
-  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.11, 10), new THREE.MeshStandardMaterial({ color: '#473326', roughness: 0.92 }));
-  hat.position.y = 1.82;
-  root.add(hat);
+  // Pelvis / Waist & Belt
+  const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.175, 0.2, 12), trouserMat);
+  pelvis.position.y = 0.85;
+  pelvis.scale.set(1.15, 1, 0.78);
+  pelvis.castShadow = true;
+  bodyPivot.add(pelvis);
 
-  const armGeometry = new THREE.CapsuleGeometry(0.065, 0.43, 3, 7);
-  const leftArm = new THREE.Group();
-  leftArm.position.set(-0.29, 1.33, 0);
-  const leftArmMesh = new THREE.Mesh(armGeometry, coatMaterial);
-  leftArmMesh.position.y = -0.19;
-  leftArm.add(leftArmMesh);
-  const rightArm = new THREE.Group();
-  rightArm.position.set(0.29, 1.33, 0);
-  const rightArmMesh = new THREE.Mesh(armGeometry, coatMaterial);
-  rightArmMesh.position.y = -0.19;
-  rightArm.add(rightArmMesh);
-  root.add(leftArm, rightArm);
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.172, 0.172, 0.055, 14), beltMat);
+  belt.position.y = 0.94;
+  belt.scale.set(1.15, 1, 0.8);
+  bodyPivot.add(belt);
 
-  const legGeometry = new THREE.CapsuleGeometry(0.075, 0.42, 3, 7);
-  const leftLeg = new THREE.Mesh(legGeometry, trouserMaterial);
-  leftLeg.position.set(-0.12, 0.37, 0);
-  const rightLeg = new THREE.Mesh(legGeometry, trouserMaterial);
-  rightLeg.position.set(0.12, 0.37, 0);
-  root.add(leftLeg, rightLeg, makePlayerNameplate(player.name));
-  root.userData.remoteAvatar = { leftArm, rightArm, leftLeg, rightLeg, target: new THREE.Vector3(), targetYaw: 0, walking: false, phase: 0, waveUntil: 0 };
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.045, 0.025), brassMat);
+  buckle.position.set(0, 0.94, 0.145);
+  bodyPivot.add(buckle);
+
+  // Tailored Torso (Ribcage + Shoulders + Shirt Front + Lapels)
+  const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.168, 0.48, 14), coatMat);
+  chest.position.y = 1.19;
+  chest.scale.set(1.18, 1, 0.76);
+  chest.castShadow = true;
+  bodyPivot.add(chest);
+
+  const shoulders = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.28, 6, 12), coatMat);
+  shoulders.rotation.z = Math.PI / 2;
+  shoulders.position.y = 1.38;
+  shoulders.scale.set(1, 1, 0.78);
+  shoulders.castShadow = true;
+  bodyPivot.add(shoulders);
+
+  const shirtV = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.04), shirtMat);
+  shirtV.position.set(0, 1.31, 0.125);
+  bodyPivot.add(shirtV);
+
+  const tie = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.22, 0.02), tieMat);
+  tie.position.set(0, 1.29, 0.145);
+  bodyPivot.add(tie);
+
+  [-1, 1].forEach((side) => {
+    const lapel = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.24, 0.03), coatMat);
+    lapel.position.set(side * 0.068, 1.31, 0.135);
+    lapel.rotation.z = side * -0.22;
+    bodyPivot.add(lapel);
+  });
+
+  // Coat Buttons
+  [1.14, 1.04].forEach((by) => {
+    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.015, 8), brassMat);
+    btn.rotation.x = Math.PI / 2;
+    btn.position.set(0, by, 0.145);
+    bodyPivot.add(btn);
+  });
+
+  // Neck & Collar
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.068, 0.14, 12), skinMat);
+  neck.position.y = 1.48;
+  neck.castShadow = true;
+  bodyPivot.add(neck);
+
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.06, 12), shirtMat);
+  collar.position.y = 1.44;
+  bodyPivot.add(collar);
+
+  // Sculpted Human Head & Facial Features
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 1.63, 0.01);
+  bodyPivot.add(headGroup);
+
+  const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.125, 16, 14), skinMat);
+  cranium.scale.set(0.92, 1.08, 1.0);
+  cranium.castShadow = true;
+  headGroup.add(cranium);
+
+  const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.068, 0.11, 12), skinMat);
+  jaw.position.set(0, -0.075, 0.018);
+  jaw.scale.set(0.92, 1, 0.96);
+  headGroup.add(jaw);
+
+  // Ears
+  [-1, 1].forEach((side) => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), skinMat);
+    ear.scale.set(0.45, 1.15, 0.75);
+    ear.position.set(side * 0.114, -0.01, -0.01);
+    headGroup.add(ear);
+  });
+
+  // Nose
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.055, 6), skinMat);
+  nose.rotation.x = Math.PI * 0.32;
+  nose.position.set(0, -0.015, 0.128);
+  headGroup.add(nose);
+
+  // Eyes (Sclera, Iris, Pupil, Eyebrow)
+  const scleraMat = new THREE.MeshStandardMaterial({ color: '#f7f5f0', roughness: 0.25 });
+  const irisMat = new THREE.MeshStandardMaterial({ color: '#3b4d3e', roughness: 0.2 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: '#111111', roughness: 0.1 });
+  [-1, 1].forEach((side) => {
+    const eyeX = side * 0.044;
+    const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), scleraMat);
+    sclera.scale.set(1.1, 0.82, 0.7);
+    sclera.position.set(eyeX, 0.016, 0.108);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 8), irisMat);
+    iris.position.set(eyeX, 0.016, 0.118);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.005, 6, 6), pupilMat);
+    pupil.position.set(eyeX, 0.016, 0.123);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.009, 0.012), hairMat);
+    brow.position.set(eyeX, 0.04, 0.114);
+    brow.rotation.z = side * -0.08;
+    headGroup.add(sclera, iris, pupil, brow);
+  });
+
+  // Lips / Mouth
+  const lips = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.011, 0.014), lipMat);
+  lips.position.set(0, -0.058, 0.108);
+  headGroup.add(lips);
+
+  // Hair + Classic Hat
+  const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), hairMat);
+  hairCap.position.set(0, 0.018, -0.015);
+  hairCap.rotation.x = -0.25;
+  headGroup.add(hairCap);
+
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.21, 0.018, 16), hatMat);
+  brim.position.set(0, 0.095, 0);
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.132, 0.11, 14), hatMat);
+  crown.position.set(0, 0.15, 0);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.133, 0.134, 0.022, 14), tieMat);
+  band.position.set(0, 0.11, 0);
+  headGroup.add(brim, crown, band);
+
+  // Articulated Arms (Upper Arm + Elbow + Forearm + Hand)
+  function createArm(side) {
+    const shoulderJoint = new THREE.Group();
+    shoulderJoint.position.set(side * 0.245, 1.38, 0);
+    const upperArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.052, 0.22, 5, 10), coatMat);
+    upperArm.position.y = -0.14;
+    upperArm.castShadow = true;
+    shoulderJoint.add(upperArm);
+
+    const elbowJoint = new THREE.Group();
+    elbowJoint.position.y = -0.28;
+    shoulderJoint.add(elbowJoint);
+
+    const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.043, 0.20, 5, 10), coatMat);
+    forearm.position.y = -0.12;
+    forearm.castShadow = true;
+    elbowJoint.add(forearm);
+
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.025, 10), shirtMat);
+    cuff.position.y = -0.235;
+    elbowJoint.add(cuff);
+
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), skinMat);
+    hand.scale.set(0.72, 1.25, 0.55);
+    hand.position.y = -0.275;
+    elbowJoint.add(hand);
+
+    return { shoulderJoint, elbowJoint };
+  }
+
+  // Articulated Legs (Thigh + Knee + Shin + Leather Dress Shoe)
+  function createLeg(side) {
+    const hipJoint = new THREE.Group();
+    hipJoint.position.set(side * 0.105, 0.80, 0);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.068, 0.28, 5, 10), trouserMat);
+    thigh.position.y = -0.18;
+    thigh.castShadow = true;
+    hipJoint.add(thigh);
+
+    const kneeJoint = new THREE.Group();
+    kneeJoint.position.y = -0.38;
+    hipJoint.add(kneeJoint);
+
+    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.052, 0.28, 5, 10), trouserMat);
+    shin.position.y = -0.18;
+    shin.castShadow = true;
+    kneeJoint.add(shin);
+
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.075, 0.21), shoeMat);
+    shoe.position.set(0, -0.385, 0.045);
+    shoe.castShadow = true;
+    kneeJoint.add(shoe);
+
+    return { hipJoint, kneeJoint };
+  }
+
+  const leftArmRig = createArm(-1);
+  const rightArmRig = createArm(1);
+  const leftLegRig = createLeg(-1);
+  const rightLegRig = createLeg(1);
+
+  bodyPivot.add(leftArmRig.shoulderJoint, rightArmRig.shoulderJoint, leftLegRig.hipJoint, rightLegRig.hipJoint);
+  root.add(makePlayerNameplate(player.name));
+  root.userData.remoteAvatar = {
+    bodyPivot,
+    headGroup,
+    leftArm: leftArmRig.shoulderJoint,
+    rightArm: rightArmRig.shoulderJoint,
+    leftElbow: leftArmRig.elbowJoint,
+    rightElbow: rightArmRig.elbowJoint,
+    leftLeg: leftLegRig.hipJoint,
+    rightLeg: rightLegRig.hipJoint,
+    leftKnee: leftLegRig.kneeJoint,
+    rightKnee: rightLegRig.kneeJoint,
+    target: new THREE.Vector3(),
+    targetYaw: 0,
+    walking: false,
+    phase: 0,
+    waveUntil: 0,
+  };
   return root;
 }
 
@@ -2420,8 +2638,13 @@ function showPlayerAction(playerId, action) {
 const clock = new THREE.Clock();
 let animationFrameId = 0;
 let poseClock = 0;
+let scenePaused = false;
 
 function animate() {
+  if (scenePaused) {
+    animationFrameId = 0;
+    return;
+  }
   animationFrameId = requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.05);
   const elapsed = clock.elapsedTime;
@@ -2433,16 +2656,31 @@ function animate() {
     yawDelta = Math.atan2(Math.sin(yawDelta), Math.cos(yawDelta));
     avatar.rotation.y += yawDelta * (1 - Math.exp(-10 * delta));
     if (remote.walking) {
-      remote.phase += delta * 8;
-      remote.leftLeg.rotation.x = Math.sin(remote.phase) * 0.34;
-      remote.rightLeg.rotation.x = -Math.sin(remote.phase) * 0.34;
-      remote.leftArm.rotation.x = -Math.sin(remote.phase) * 0.22;
+      remote.phase += delta * 8.5;
+      const swing = Math.sin(remote.phase);
+      remote.leftLeg.rotation.x = swing * 0.42;
+      remote.rightLeg.rotation.x = -swing * 0.42;
+      remote.leftKnee.rotation.x = Math.max(0, -swing) * 0.55;
+      remote.rightKnee.rotation.x = Math.max(0, swing) * 0.55;
+      remote.leftArm.rotation.x = -swing * 0.3;
+      remote.leftElbow.rotation.x = -0.28 - Math.max(0, swing) * 0.25;
+      remote.rightArm.rotation.x = swing * 0.3;
+      remote.rightElbow.rotation.x = -0.28 - Math.max(0, -swing) * 0.25;
+      remote.bodyPivot.position.y = Math.abs(Math.cos(remote.phase)) * 0.032;
     } else {
-      remote.leftLeg.rotation.x *= 0.8;
-      remote.rightLeg.rotation.x *= 0.8;
-      remote.leftArm.rotation.x *= 0.8;
+      remote.leftLeg.rotation.x *= 0.82;
+      remote.rightLeg.rotation.x *= 0.82;
+      remote.leftKnee.rotation.x *= 0.82;
+      remote.rightKnee.rotation.x *= 0.82;
+      remote.leftArm.rotation.x *= 0.82;
+      remote.rightArm.rotation.x *= 0.82;
+      remote.leftElbow.rotation.x += (-0.12 - remote.leftElbow.rotation.x) * 0.15;
+      remote.rightElbow.rotation.x += (-0.12 - remote.rightElbow.rotation.x) * 0.15;
+      remote.bodyPivot.position.y = Math.sin(elapsed * 2.1) * 0.008;
     }
-    remote.rightArm.rotation.z = performance.now() < remote.waveUntil ? -0.9 + Math.sin(elapsed * 23) * 0.45 : remote.rightArm.rotation.z * 0.78;
+    const waving = performance.now() < remote.waveUntil;
+    remote.rightArm.rotation.z = waving ? -1.1 + Math.sin(elapsed * 22) * 0.4 : remote.rightArm.rotation.z * 0.78;
+    if (waving) remote.rightElbow.rotation.x = -0.85;
   }
 
   if (state.townDoorAnimation) {
@@ -2455,9 +2693,23 @@ function animate() {
     if (t >= 1) {
       state.townDoorAnimation = null;
       state.townDoorOpen = animation.enterWhenOpen;
-      if (animation.enterWhenOpen) onEnterTown();
-      else controller.setActive(true);
+      if (animation.enterWhenOpen) {
+        // Walk smoothly out through the open carved doorway into the city
+        flyCameraTo(
+          new THREE.Vector3(0, 1.68, 7.65),
+          new THREE.Vector3(0, 1.68, 10.5),
+          680,
+          () => onEnterTown()
+        );
+      } else {
+        controller.setActive(true);
+      }
     }
+  }
+
+  // If the player walks manually through the open doorway, trigger transition outside
+  if (state.townDoorOpen && !state.townDoorAnimation && !state.cameraAnim && controller.position.z > 7.25) {
+    onEnterTown();
   }
 
   // 1. Smooth Camera Flight Interpolation
@@ -2547,7 +2799,8 @@ function animate() {
     globeMesh.rotation.y += delta * (state.globeFastSpin ? 0.8 : 0.08);
   }
 
-  renderer.render(scene, camera);
+  if (state.bloomEnabled) composer.render();
+  else renderer.render(scene, camera);
 }
 
 function handleResize() {
@@ -2557,6 +2810,8 @@ function handleResize() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+  composer.setSize(width, height);
+  bloomPass.setSize(width, height);
 }
 
 const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(handleResize);
@@ -2594,18 +2849,42 @@ return {
   setInputEnabled(enabled) {
     controller.setInputEnabled(enabled);
   },
+  setPaused(paused) {
+    scenePaused = Boolean(paused);
+    if (!scenePaused && !animationFrameId) {
+      clock.getDelta();
+      animate();
+    } else if (scenePaused && animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
+    }
+  },
   interact,
   zoom(factor) {
     controller.zoom(factor);
   },
+  setSensitivity(value) {
+    controller.setSensitivity(value);
+  },
+  setBloomEnabled(enabled) {
+    state.bloomEnabled = Boolean(enabled);
+  },
+  openTown() {
+    beginTownEntry();
+  },
   closeBook: returnFromBook,
   closeTownDoor() {
-    if (!state.townDoorOpen || state.townDoorAnimation) return;
+    if (!state.townDoorOpen && !state.townDoorAnimation) {
+      controller.setPose(VIEWPOINTS.grandHall.pos, VIEWPOINTS.grandHall.target);
+      controller.setActive(true);
+      return;
+    }
     state.townDoorOpen = false;
+    controller.setPose(new THREE.Vector3(0, 1.68, 5.95), new THREE.Vector3(0, 1.62, 0));
     controller.setActive(false);
     state.townDoorAnimation = {
       startTime: performance.now(),
-      duration: 720,
+      duration: 620,
       startAngle: townDoorPivot.rotation.y,
       endAngle: 0,
       enterWhenOpen: false,
@@ -2631,6 +2910,8 @@ return {
         material.dispose();
       });
     });
+    composer.dispose();
+    envRT.dispose();
     renderer.dispose();
     renderer.domElement.remove();
   },

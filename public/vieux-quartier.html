@@ -3,17 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Vieux Quartier — Interactive 3D Vintage European Town</title>
+  <title>Leonida Quarter &amp; Vieux Bay — Open-World Story Arena</title>
 
-  <!-- Tailwind CSS for responsive HUD & glassmorphism parchment UI -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Vintage serif & clean sans fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Three.js ES Module Import Map -->
   <script type="importmap">
     {
       "imports": {
@@ -25,429 +21,388 @@
 
   <style>
     :root {
-      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
       --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #1c1612;
-      font-family: var(--font-sans);
-      user-select: none;
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background-color: #0e0b16; font-family: var(--font-sans); user-select: none;
     }
-
-    #canvas-container {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
+    #canvas-container { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    canvas { display: block; width: 100%; height: 100%; outline: none; }
+    .font-vintage { font-family: var(--font-display); }
+    .vice-glass {
+      background: linear-gradient(145deg, rgba(16, 15, 28, 0.84), rgba(10, 10, 18, 0.90));
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 194, 128, 0.24);
+      box-shadow: 0 10px 30px rgba(4, 3, 12, 0.55);
+      color: #f9f4eb;
     }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      outline: none;
+    .keycap {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 1.4rem; padding: 0.1rem 0.38rem; border-radius: 0.35rem;
+      font-size: 10px; font-weight: 700; color: #7ef2ff;
+      background: rgba(56, 232, 255, 0.12); border: 1px solid rgba(56, 232, 255, 0.32);
     }
-
-    .font-vintage {
-      font-family: var(--font-serif);
-    }
-
-    /* Warm parchment glassmorphism panels */
-    .parchment-glass {
-      background: linear-gradient(145deg, rgba(250, 243, 230, 0.90), rgba(238, 226, 206, 0.86));
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(168, 134, 92, 0.42);
-      box-shadow: 0 12px 36px rgba(24, 15, 8, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-      color: #2f2419;
-    }
-
-    .dark-glass {
-      background: linear-gradient(145deg, rgba(36, 27, 20, 0.78), rgba(24, 18, 13, 0.84));
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(219, 186, 137, 0.28);
-      box-shadow: 0 8px 28px rgba(10, 6, 3, 0.35);
-      color: #f6ecdc;
-    }
-
-    /* Interactive 3D projected hotspot pins */
     .hotspot-pin {
-      position: absolute;
-      transform: translate(-50%, -100%);
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 15;
-      transition: transform 0.22s ease, opacity 0.25s ease;
+      position: absolute; transform: translate(-50%, -100%);
+      pointer-events: auto; cursor: pointer; z-index: 14;
+      transition: transform 0.2s ease;
     }
-
-    .hotspot-pin:hover {
-      transform: translate(-50%, -108%) scale(1.08);
-      z-index: 25;
-    }
-
+    .hotspot-pin:hover { transform: translate(-50%, -108%) scale(1.1); z-index: 25; }
     .hotspot-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 9999px;
-      background: radial-gradient(circle at 35% 35%, #fff6df 0%, #e4a853 55%, #a86424 100%);
-      border: 2px solid rgba(255, 248, 232, 0.95);
-      box-shadow: 0 0 16px rgba(245, 180, 82, 0.75), 0 4px 10px rgba(0, 0, 0, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
+      width: 24px; height: 24px; border-radius: 9999px;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #38e8ff 55%, #0e7490 100%);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 14px rgba(56, 232, 255, 0.75);
+      display: flex; align-items: center; justify-content: center;
     }
-
-    .hotspot-dot::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 9999px;
-      border: 1.5px solid rgba(252, 212, 138, 0.65);
-      animation: pulse-ring 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-    }
-
-    @keyframes pulse-ring {
-      0% { transform: scale(0.85); opacity: 0.85; }
-      75% { transform: scale(1.55); opacity: 0; }
-      100% { transform: scale(1.55); opacity: 0; }
-    }
-
     .hotspot-label {
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 50%;
-      transform: translateX(-50%);
-      white-space: nowrap;
-      padding: 3px 9px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.02em;
-      background: rgba(31, 22, 15, 0.86);
-      color: #f9eed9;
-      border: 1px solid rgba(226, 189, 132, 0.45);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease, transform 0.2s ease;
+      position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%);
+      white-space: nowrap; padding: 3px 9px; border-radius: 9999px; font-size: 11px; font-weight: 600;
+      background: rgba(12, 12, 22, 0.9); color: #f8fafc; border: 1px solid rgba(56, 232, 255, 0.45);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
     }
-
-    .hotspot-pin:hover .hotspot-label {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-2px);
-    }
-
-    /* Custom subtle scrollbar */
-    .vintage-scroll::-webkit-scrollbar {
-      width: 5px;
-    }
-    .vintage-scroll::-webkit-scrollbar-track {
-      background: rgba(120, 90, 58, 0.08);
-      border-radius: 9999px;
-    }
-    .vintage-scroll::-webkit-scrollbar-thumb {
-      background: rgba(140, 102, 62, 0.38);
-      border-radius: 9999px;
-    }
-
-    /* Panel slide animations */
-    .info-card-hidden {
-      opacity: 0;
-      transform: translateX(28px) scale(0.98);
-      pointer-events: none;
-    }
-    .info-card-visible {
-      opacity: 1;
-      transform: translateX(0) scale(1);
-      pointer-events: auto;
-    }
-
-    .drawer-hidden {
-      opacity: 0;
-      transform: translateY(-10px) scale(0.98);
-      pointer-events: none;
-    }
-    .drawer-visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      pointer-events: auto;
-    }
-
-    /* Loading screen */
-    #loading-screen {
-      transition: opacity 0.7s ease, visibility 0.7s ease;
-    }
-    #loading-screen.fade-out {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
+    .hotspot-pin:hover .hotspot-label { opacity: 1; }
+    .vice-scroll::-webkit-scrollbar { width: 5px; }
+    .vice-scroll::-webkit-scrollbar-thumb { background: rgba(255, 190, 110, 0.35); border-radius: 9999px; }
+    #loading-screen { transition: opacity 0.65s ease, visibility 0.65s ease; }
+    #loading-screen.fade-out { opacity: 0; visibility: hidden; pointer-events: none; }
   </style>
 </head>
 <body>
-  <!-- 3D WebGL Canvas Container -->
   <div id="canvas-container"></div>
-
-  <!-- Projected 3D Hotspot Pins Layer -->
   <div id="hotspots-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
 
-  <!-- Hover Floating Tooltip -->
-  <div id="hover-tooltip" class="fixed z-30 pointer-events-none hidden px-3 py-1.5 rounded-xl dark-glass text-xs shadow-lg transition-opacity duration-150">
-    <div id="tooltip-name" class="font-vintage text-base font-semibold leading-tight text-amber-100"></div>
-    <div id="tooltip-cat" class="text-[10px] uppercase tracking-wider text-amber-300/80"></div>
+  <div id="hover-tooltip" class="fixed z-30 pointer-events-none hidden px-3 py-1.5 rounded-xl vice-glass text-xs">
+    <div id="tooltip-name" class="font-semibold text-sm text-amber-100"></div>
+    <div id="tooltip-cat" class="text-[10px] uppercase tracking-wider text-cyan-300/85"></div>
   </div>
 
   <!-- Top HUD Bar -->
-  <header class="fixed top-0 left-0 right-0 z-20 p-3 sm:p-5 flex flex-wrap items-start justify-between gap-3 pointer-events-none">
-    <!-- Town Title Badge -->
-    <div class="dark-glass rounded-2xl px-4 py-2.5 sm:px-5 sm:py-3 pointer-events-auto max-w-[260px] sm:max-w-none">
-      <div class="flex items-center gap-2.5">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-300/35 text-amber-200">
-          <!-- Compass / Archway SVG Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-          </svg>
-        </span>
-        <div>
-          <h1 class="font-vintage text-xl sm:text-2xl font-bold tracking-wide text-amber-50 leading-none">
-            Vieux Quartier
-          </h1>
-          <p class="text-[11px] sm:text-xs text-amber-200/75 tracking-wider uppercase mt-0.5">
-            Vintage Town Explorer
-          </p>
+  <header class="fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex flex-wrap items-start justify-between gap-2.5 pointer-events-none">
+    <!-- Left: Mission Tracker & District Badge -->
+    <div class="flex flex-col gap-2 pointer-events-auto max-w-[330px]">
+      <div class="vice-glass rounded-2xl px-3.5 py-2.5">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.2em] text-cyan-300 font-semibold">Leonida Bay • Chronicles</div>
+            <h1 id="mission-chapter-title" class="text-sm sm:text-base font-bold text-white leading-tight mt-0.5">Chapter 1: Arrival at Ocean Drive</h1>
+          </div>
+          <button id="btn-journal" type="button" title="Open Story Journal & Chapter Select (J)" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-300/40 text-[11px] font-semibold text-cyan-100 transition shrink-0">
+            Journal [J]
+          </button>
+        </div>
+        <div class="mt-2 pt-2 border-t border-white/10 flex items-center justify-between gap-2 text-xs">
+          <span id="mission-objective-text" class="text-amber-100/95 leading-snug">Speak with Elena Vance near the Athenaeum</span>
+          <span id="mission-distance" class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-200 font-semibold text-[11px] shrink-0">0m</span>
+        </div>
+        <div id="mission-timer-bar" class="hidden mt-1.5 text-[11px] font-semibold text-rose-300 flex items-center justify-between">
+          <span id="mission-timer-label">Timer</span>
+          <span id="mission-timer-val">00s</span>
         </div>
       </div>
     </div>
 
-    <!-- Top-Right Controls -->
-    <div class="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
-      <!-- Time of Day Selector -->
-      <div class="dark-glass rounded-xl p-1 flex items-center gap-1" role="group" aria-label="Time of Day">
-        <button id="btn-golden" data-time="golden" class="time-btn px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-amber-500/30 text-amber-100 border border-amber-300/40">
-          Golden Hour
+    <!-- Right: Stats, Weather, Cars, Camera, Map, Settings -->
+    <div class="flex flex-col items-end gap-2 pointer-events-auto">
+      <div class="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+        <!-- Wanted Stars & Cash/Rep -->
+        <div class="vice-glass rounded-xl px-3 py-1.5 flex items-center gap-3 text-xs">
+          <span id="hud-wanted" class="tracking-widest text-sm text-white/25" title="Wanted Heat Level">★★★</span>
+          <span class="font-bold text-emerald-300" id="hud-cash">$250</span>
+          <span class="hidden sm:inline text-cyan-300 font-semibold" id="hud-rep">0 Rep</span>
+          <span class="hidden md:inline text-amber-300 font-semibold" id="hud-trophies">🌴 0/12</span>
+        </div>
+
+        <!-- Weather / Time Presets -->
+        <div class="vice-glass rounded-xl p-1 flex items-center gap-1">
+          <button data-time="sunset" class="time-btn px-2 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/30 text-amber-100 border border-amber-300/40">Sunset</button>
+          <button data-time="neonNight" class="time-btn px-2 py-1 rounded-lg text-[11px] font-medium text-white/70 hover:text-white border border-transparent">Night</button>
+          <button data-time="tropicalNoon" class="time-btn px-2 py-1 rounded-lg text-[11px] font-medium text-white/70 hover:text-white border border-transparent">Noon</button>
+          <button data-time="stormDusk" class="time-btn px-2 py-1 rounded-lg text-[11px] font-medium text-white/70 hover:text-white border border-transparent">Storm</button>
+        </div>
+
+        <button id="btn-drive-car" class="vice-glass hover:bg-cyan-900/50 rounded-xl px-3 py-2 text-xs font-semibold text-cyan-100 border border-cyan-300/35 transition">
+          <span id="btn-drive-label">Drive Car</span>
         </button>
-        <button id="btn-twilight" data-time="twilight" class="time-btn px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-amber-100/70 hover:text-amber-100 hover:bg-white/5 border border-transparent">
-          Twilight
+
+        <button id="btn-camera-mode" class="vice-glass hover:bg-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white transition">
+          <span id="camera-mode-label">1st Person</span>
         </button>
-        <button id="btn-morning" data-time="morning" class="time-btn px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-amber-100/70 hover:text-amber-100 hover:bg-white/5 border border-transparent">
-          Morning Mist
+
+        <button id="btn-world-map" class="vice-glass hover:bg-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white transition">Map [M]</button>
+
+        <button id="btn-hotspots" class="vice-glass hover:bg-white/10 rounded-xl px-2.5 py-2 text-xs font-medium text-white hidden sm:flex items-center gap-1.5 transition">
+          <span id="hotspot-indicator" class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <span>Pins</span>
         </button>
+
+        <button id="btn-settings" class="vice-glass hover:bg-white/10 rounded-xl px-3 py-2 text-xs font-medium text-white transition">Settings</button>
       </div>
-
-      <!-- Hotspots Toggle -->
-      <button id="btn-hotspots" title="Toggle Interactive Hotspots" class="dark-glass hover:bg-amber-900/50 rounded-xl px-3 py-2 text-xs font-medium text-amber-100 flex items-center gap-1.5 transition-all">
-        <span id="hotspot-indicator" class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]"></span>
-        <span class="hidden sm:inline">Hotspots</span>
-      </button>
-
-      <!-- Explore Landmarks Drawer Toggle -->
-      <button id="btn-landmarks" title="Explore Landmarks" class="dark-glass hover:bg-amber-900/50 rounded-xl px-3 py-2 text-xs font-medium text-amber-100 flex items-center gap-1.5 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>
-        <span>Landmarks</span>
-      </button>
-
-      <!-- Return to Overview / Reset View -->
-      <button id="btn-reset" title="Return to the street entrance (Esc)" class="dark-glass hover:bg-amber-900/50 rounded-xl px-3 py-2 text-xs font-medium text-amber-100 flex items-center gap-1.5 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-          <path d="M3 3v5h5"></path>
-        </svg>
-        <span class="hidden sm:inline">Street Start</span>
-      </button>
     </div>
   </header>
 
-  <!-- Collapsible Explore Landmarks Quick-Jump Menu -->
-  <aside id="landmarks-drawer" class="fixed top-20 right-3 sm:right-5 z-25 w-72 max-h-[65vh] parchment-glass rounded-2xl p-4 transition-all duration-300 drawer-hidden flex flex-col">
-    <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-amber-900/15">
-      <div>
-        <h2 class="font-vintage text-xl font-bold text-stone-800 leading-none">Explore Landmarks</h2>
-        <p class="text-[11px] text-stone-600 mt-0.5">Select a building to visit</p>
-      </div>
-      <button id="btn-close-drawer" class="p-1.5 rounded-lg hover:bg-stone-800/10 text-stone-700 transition-colors" aria-label="Close landmarks menu">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-    </div>
-    <div id="landmarks-list" class="overflow-y-auto vintage-scroll space-y-1.5 pr-1">
-      <!-- Populated dynamically from building data -->
-    </div>
-  </aside>
-
-  <!-- Building / Landmark Inspection Info Card -->
-  <section id="info-card" class="fixed bottom-16 sm:bottom-auto sm:top-24 right-3 left-3 sm:left-auto sm:right-5 sm:w-[360px] z-30 parchment-glass rounded-2xl p-5 transition-all duration-350 info-card-hidden max-h-[70vh] overflow-y-auto vintage-scroll">
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <span id="info-category" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest bg-amber-900/15 text-amber-950 border border-amber-900/20">
-          Historic Landmark
-        </span>
-        <h2 id="info-name" class="font-vintage text-2xl sm:text-3xl font-bold text-stone-900 mt-1.5 leading-tight">
-          Building Name
-        </h2>
-      </div>
-      <button id="btn-close-info" class="p-1.5 rounded-xl bg-stone-900/10 hover:bg-stone-900/20 text-stone-800 transition-colors shrink-0" title="Close & Return (Esc)">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-    </div>
-
-    <!-- Metadata Grid -->
-    <div class="grid grid-cols-2 gap-2.5 mt-3.5 py-3 border-y border-amber-900/15 text-xs">
-      <div>
-        <span class="block text-[10px] uppercase tracking-wider text-stone-500 font-medium">Architectural Style</span>
-        <span id="info-style" class="font-semibold text-stone-800 mt-0.5 block">Beaux-Arts</span>
-      </div>
-      <div>
-        <span class="block text-[10px] uppercase tracking-wider text-stone-500 font-medium">Era / Built</span>
-        <span id="info-era" class="font-semibold text-stone-800 mt-0.5 block">c. 1878</span>
-      </div>
-    </div>
-
-    <!-- Description -->
-    <p id="info-desc" class="text-sm text-stone-700 leading-relaxed mt-3.5">
-      Description text goes here.
-    </p>
-
-    <!-- Notable Features -->
-    <div class="mt-4">
-      <h3 class="text-[11px] uppercase tracking-wider font-semibold text-stone-600 mb-2">Notable Architectural Details</h3>
-      <ul id="info-features" class="space-y-1.5 text-xs text-stone-800">
-        <!-- Populated dynamically -->
-      </ul>
-    </div>
-
-    <!-- Action Footer -->
-    <div class="mt-5 pt-3 border-t border-amber-900/15 flex items-center justify-between gap-2">
-      <button id="btn-return-overview" class="w-full py-2.5 px-4 rounded-xl bg-stone-800 hover:bg-stone-900 text-amber-50 text-xs font-medium tracking-wide transition-all flex items-center justify-center gap-2 shadow-md">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        Return to Street Entrance
-      </button>
-    </div>
-  </section>
-
-  <!-- Touch movement pad for the first-person town walk -->
-  <div class="fixed bottom-16 left-4 z-20 grid grid-cols-3 gap-1 md:hidden" aria-label="Town movement controls">
-    <span></span>
-    <button data-town-move="forward" class="dark-glass h-11 w-11 touch-none rounded-xl text-lg text-amber-100" aria-label="Walk forward">↑</button>
-    <span></span>
-    <button data-town-move="left" class="dark-glass h-11 w-11 touch-none rounded-xl text-lg text-amber-100" aria-label="Walk left">←</button>
-    <button data-town-move="backward" class="dark-glass h-11 w-11 touch-none rounded-xl text-lg text-amber-100" aria-label="Walk backward">↓</button>
-    <button data-town-move="right" class="dark-glass h-11 w-11 touch-none rounded-xl text-lg text-amber-100" aria-label="Walk right">→</button>
+  <!-- Toast Banner -->
+  <div id="arena-toast" class="fixed top-28 left-1/2 -translate-x-1/2 z-40 pointer-events-none hidden">
+    <div class="vice-glass rounded-full px-5 py-2 text-xs sm:text-sm font-semibold text-cyan-200 border border-cyan-300/40 shadow-2xl"></div>
   </div>
-  <div id="library-door-prompt" class="fixed bottom-20 left-1/2 z-30 hidden -translate-x-1/2 rounded-xl border border-amber-300/35 bg-stone-950/85 px-4 py-2 text-center text-xs text-amber-50 shadow-lg backdrop-blur-md">
-    The Grand Athenaeum <span class="mx-1 text-amber-400">·</span> Press <kbd class="rounded border border-amber-200/30 px-1.5 py-0.5 text-amber-200">E</kbd> to return
-  </div>
-  <button id="library-door-touch" class="fixed bottom-20 right-4 z-30 hidden min-h-11 rounded-xl border border-amber-300/35 bg-stone-950/85 px-4 text-xs font-medium text-amber-50 shadow-lg backdrop-blur-md md:hidden" type="button">
-    Enter Library
+
+  <!-- GPS Corner Radar Minimap -->
+  <button id="minimap-shell" type="button" title="Click for Full Leonida Street Atlas (M)" class="fixed bottom-12 right-3 sm:right-5 z-20 vice-glass rounded-2xl p-2 pointer-events-auto cursor-pointer flex flex-col items-center gap-1">
+    <canvas id="minimap-canvas" width="176" height="176" class="rounded-xl block w-[128px] h-[128px] sm:w-[162px] sm:h-[162px]"></canvas>
+    <div class="w-full flex items-center justify-between px-1 text-[10px] text-cyan-200/85">
+      <span class="uppercase tracking-wider font-semibold">GPS Radar</span>
+      <span>[M] Atlas</span>
+    </div>
   </button>
 
+  <!-- Driving Speedometer & Nitro HUD -->
+  <div id="car-hud" class="fixed bottom-12 left-3 sm:left-5 z-20 hidden vice-glass rounded-2xl px-4 py-3 pointer-events-auto min-w-[250px]">
+    <div class="flex items-center justify-between gap-4 pb-2 mb-2 border-b border-white/15">
+      <div>
+        <div id="car-hud-name" class="text-base font-bold text-white leading-none">Pegassi Vice V12</div>
+        <div class="text-[10px] uppercase tracking-widest text-cyan-300/80 mt-1">Shift = Nitro • Space = Drift</div>
+      </div>
+      <div class="text-right">
+        <span id="car-speed" class="text-3xl font-extrabold text-amber-200 leading-none">0</span>
+        <span class="text-[10px] text-amber-300/80 ml-0.5">km/h</span>
+      </div>
+    </div>
+    <div class="mb-2.5">
+      <div class="flex justify-between text-[10px] text-cyan-200/80 mb-1"><span>NITRO BOOST</span><span id="nitro-pct">100%</span></div>
+      <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden"><div id="nitro-bar" class="h-full bg-gradient-to-r from-cyan-400 to-fuchsia-400 w-full transition-all duration-75"></div></div>
+    </div>
+    <div class="flex items-center justify-between gap-1.5 text-[11px]">
+      <span class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-300/30 font-bold" id="car-gear">N</span>
+      <button id="btn-car-lights" type="button" class="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/15">Lights [L]</button>
+      <button id="btn-car-siren" type="button" class="hidden px-2 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 border border-blue-300/40">Siren [Y]</button>
+      <button id="btn-car-horn" type="button" class="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/15">Horn [H]</button>
+      <button id="btn-car-exit" type="button" class="px-2 py-1 rounded-lg bg-rose-700/50 hover:bg-rose-600/70 border border-rose-300/40">Exit [E]</button>
+    </div>
+  </div>
+
+  <!-- Cinematic Story Dialogue Cutscene Bar -->
+  <div id="dialogue-overlay" class="fixed inset-0 z-40 hidden flex-col justify-between pointer-events-auto">
+    <div class="h-12 bg-black/95 w-full"></div>
+    <div class="mt-auto mb-6 mx-auto w-[min(94vw,44rem)] vice-glass rounded-2xl p-5 border border-cyan-300/40">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div>
+          <span id="dlg-speaker" class="text-base font-bold text-amber-200">Elena Vance</span>
+          <span id="dlg-role" class="ml-2 text-[11px] uppercase tracking-wider text-cyan-300/80">Archive Curator</span>
+        </div>
+        <span class="text-[10px] uppercase tracking-widest text-white/50">Story Cutscene</span>
+      </div>
+      <p id="dlg-text" class="text-sm sm:text-base text-white/95 leading-relaxed mb-4"></p>
+      <div id="dlg-choices" class="flex flex-wrap justify-end gap-2"></div>
+    </div>
+    <div class="h-12 bg-black/95 w-full"></div>
+  </div>
+
+  <!-- Cipher Vault Puzzle Modal (Chapter 9) -->
+  <div id="cipher-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="vice-glass rounded-3xl p-6 w-full max-w-sm text-center border border-cyan-300/40">
+      <div class="text-xs uppercase tracking-[0.2em] text-cyan-300 font-semibold">Apex Vault Security</div>
+      <h2 class="font-vintage text-3xl font-bold text-white mt-1">Sovereign Cipher Lock</h2>
+      <p id="cipher-hint" class="text-xs text-amber-200/85 mt-2"></p>
+      <div class="flex items-center justify-center gap-3 my-5">
+        <input id="dial-0" type="number" min="0" max="9" value="0" class="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-black/50 border border-cyan-300/40 text-white" />
+        <input id="dial-1" type="number" min="0" max="9" value="0" class="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-black/50 border border-cyan-300/40 text-white" />
+        <input id="dial-2" type="number" min="0" max="9" value="0" class="w-14 h-16 text-center text-2xl font-bold rounded-xl bg-black/50 border border-cyan-300/40 text-white" />
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-cipher-cancel" type="button" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold">Back</button>
+        <button id="btn-cipher-unlock" type="button" class="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold">Unlock Vault</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story Journal & Chapter Select Modal -->
+  <div id="journal-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-6">
+    <div class="vice-glass rounded-3xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/15">
+        <div>
+          <h2 class="font-vintage text-2xl sm:text-3xl font-bold text-white leading-none">Chronicles of Leonida Bay</h2>
+          <p class="text-xs text-cyan-200/80 mt-1">10-Chapter Story Campaign (~1 Hour Playthrough) • Progress Auto-Saved</p>
+        </div>
+        <button id="btn-close-journal" type="button" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white">✕</button>
+      </div>
+      <div id="journal-chapters" class="flex-1 overflow-y-auto vice-scroll p-4 space-y-2.5"></div>
+      <div class="px-5 py-3 border-t border-white/15 flex items-center justify-between text-xs">
+        <span class="text-white/70">Collect 12 Neon Palm Trophies around Leonida for bonus cash!</span>
+        <button id="btn-reset-story" type="button" class="px-3 py-1.5 rounded-lg bg-rose-800/50 hover:bg-rose-700/70 text-rose-100 font-semibold">Reset Campaign</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Interactive World Atlas Modal -->
+  <div id="world-map-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-6">
+    <div class="vice-glass rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/15">
+        <div>
+          <h2 class="font-vintage text-2xl sm:text-3xl font-bold text-white leading-none">Leonida Bay Street Atlas</h2>
+          <p class="text-xs text-cyan-200/80 mt-1">Click any landmark or vehicle icon to fast-travel immediately</p>
+        </div>
+        <button id="btn-close-map" type="button" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white">✕</button>
+      </div>
+      <div class="flex-1 flex items-center justify-center p-4 bg-black/30 overflow-hidden">
+        <canvas id="world-map-canvas" width="680" height="680" class="w-full max-w-[520px] aspect-square rounded-2xl border border-cyan-300/35 cursor-pointer bg-[#141724]"></canvas>
+      </div>
+      <div class="px-5 py-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2 text-xs text-white/80">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> You</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-cyan-400 inline-block"></span> Mission GPS</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-orange-500 inline-block"></span> Vehicles</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-300 inline-block"></span> Landmarks</span>
+        </div>
+        <span>Press <span class="keycap">M</span> to toggle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Landmark Inspection Card -->
+  <section id="info-card" class="fixed bottom-16 sm:bottom-auto sm:top-24 right-3 left-3 sm:left-auto sm:right-5 sm:w-[340px] z-30 vice-glass rounded-2xl p-5 hidden max-h-[65vh] overflow-y-auto vice-scroll">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <span id="info-category" class="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest bg-cyan-500/20 text-cyan-200 border border-cyan-300/30">Landmark</span>
+        <h2 id="info-name" class="font-vintage text-2xl font-bold text-white mt-1 leading-tight"></h2>
+      </div>
+      <button id="btn-close-info" class="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white">✕</button>
+    </div>
+    <p id="info-desc" class="text-xs sm:text-sm text-white/85 leading-relaxed mt-3"></p>
+  </section>
+
+  <!-- Graphics & Controls Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6">
+    <div class="vice-glass rounded-3xl w-full max-w-lg max-h-[88vh] overflow-y-auto vice-scroll p-5 sm:p-6">
+      <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4">
+        <div>
+          <h2 class="font-vintage text-2xl font-bold text-white leading-none">Graphics &amp; Controls</h2>
+          <p class="text-xs text-cyan-200/75 mt-1">Next-gen WebGL shaders, vehicle handling &amp; keybinds</p>
+        </div>
+        <button id="btn-close-settings" type="button" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white">✕</button>
+      </div>
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-[11px] uppercase tracking-wider text-cyan-300/90 mb-1.5">Graphics Preset</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button data-quality="balanced" class="quality-btn py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15">Balanced</button>
+            <button data-quality="high" class="quality-btn py-2 rounded-xl border border-cyan-300/60 bg-cyan-500/25 font-bold">High</button>
+            <button data-quality="ultra" class="quality-btn py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/15">Ultra</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <label class="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 cursor-pointer">
+            <span>Cinematic Bloom</span>
+            <input id="opt-bloom" type="checkbox" checked class="accent-cyan-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 cursor-pointer">
+            <span>Vice Color Grade</span>
+            <input id="opt-grade" type="checkbox" checked class="accent-cyan-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 cursor-pointer">
+            <span>Soft Shadows</span>
+            <input id="opt-shadows" type="checkbox" checked class="accent-cyan-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-3 py-2.5 cursor-pointer">
+            <span>Engine &amp; Siren Audio</span>
+            <input id="opt-sound" type="checkbox" checked class="accent-cyan-400 w-4 h-4" />
+          </label>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1"><span class="uppercase tracking-wider text-cyan-300/90">Look Sensitivity</span><span id="opt-sens-val">1.0×</span></div>
+          <input id="opt-sens" type="range" min="0.4" max="2.2" step="0.1" value="1.0" class="w-full accent-cyan-400" />
+        </div>
+        <div class="rounded-2xl bg-black/35 border border-white/10 p-3.5 space-y-2">
+          <div class="font-bold text-amber-200">Full Controls Reference</div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px] text-white/85">
+            <div><span class="keycap">WASD</span> Walk / Drive</div>
+            <div><span class="keycap">Shift</span> Sprint / Nitro Boost</div>
+            <div><span class="keycap">Space</span> Jump / Handbrake Drift</div>
+            <div><span class="keycap">E</span> Enter Car / Library Door</div>
+            <div><span class="keycap">V</span> / <span class="keycap">C</span> Camera View</div>
+            <div><span class="keycap">M</span> Full Street Atlas</div>
+            <div><span class="keycap">J</span> Story Journal</div>
+            <div><span class="keycap">L</span> / <span class="keycap">H</span> / <span class="keycap">Y</span> Lights / Horn / Siren</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Pads -->
+  <div id="mobile-walk-pad" class="fixed bottom-16 left-4 z-20 grid grid-cols-3 gap-1 md:hidden">
+    <span></span>
+    <button data-town-move="forward" class="vice-glass h-11 w-11 touch-none rounded-xl text-lg">↑</button>
+    <span></span>
+    <button data-town-move="left" class="vice-glass h-11 w-11 touch-none rounded-xl text-lg">←</button>
+    <button data-town-move="backward" class="vice-glass h-11 w-11 touch-none rounded-xl text-lg">↓</button>
+    <button data-town-move="right" class="vice-glass h-11 w-11 touch-none rounded-xl text-lg">→</button>
+  </div>
+
+  <div id="mobile-drive-pad" class="fixed bottom-44 left-3 right-3 z-20 hidden items-end justify-between pointer-events-none md:hidden">
+    <div class="flex gap-2 pointer-events-auto">
+      <button data-town-move="left" class="vice-glass h-12 w-14 touch-none rounded-xl text-lg font-bold">◀</button>
+      <button data-town-move="right" class="vice-glass h-12 w-14 touch-none rounded-xl text-lg font-bold">▶</button>
+    </div>
+    <div class="flex gap-2 pointer-events-auto">
+      <button data-town-move="backward" class="vice-glass h-12 px-4 touch-none rounded-xl text-xs font-semibold text-rose-200">Brake</button>
+      <button data-town-move="forward" class="vice-glass h-12 px-4 touch-none rounded-xl text-xs font-semibold text-emerald-200">Gas</button>
+    </div>
+  </div>
+
+  <div id="context-action-prompt" class="fixed bottom-20 left-1/2 z-30 hidden -translate-x-1/2 rounded-xl border border-cyan-300/40 bg-slate-950/90 px-4 py-2 text-center text-xs text-white shadow-xl backdrop-blur-md">
+    <span id="context-action-text">Interact</span> <span class="mx-1 text-cyan-400">·</span> Press <span class="keycap">E</span>
+  </div>
+  <button id="context-action-touch" class="fixed bottom-20 right-4 z-30 hidden min-h-11 rounded-xl border border-cyan-300/40 bg-slate-950/90 px-4 text-xs font-semibold text-white md:hidden" type="button">Interact</button>
+
   <!-- Bottom Control Hints -->
-  <footer class="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none px-3 w-full max-w-2xl flex justify-center">
-    <div class="dark-glass rounded-full px-4 py-1.5 text-[11px] text-amber-100/85 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 shadow-lg">
-      <span class="flex items-center gap-1.5"><strong class="text-amber-300 font-medium">WASD / Arrows</strong> Walk</span>
+  <footer class="fixed bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none px-3 w-full max-w-3xl flex justify-center">
+    <div class="vice-glass rounded-full px-4 py-1.5 text-[11px] text-white/85 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+      <span><strong class="text-cyan-300">WASD</strong> Move / Drive</span>
       <span class="opacity-30 hidden sm:inline">•</span>
-      <span class="flex items-center gap-1.5"><strong class="text-amber-300 font-medium">Drag</strong> Look</span>
+      <span class="hidden sm:inline"><strong class="text-cyan-300">Shift</strong> Sprint / Nitro</span>
       <span class="opacity-30 hidden sm:inline">•</span>
-      <span class="hidden sm:flex items-center gap-1.5"><strong class="text-amber-300 font-medium">Click town buildings</strong> Inspect</span>
+      <span><strong class="text-cyan-300">E</strong> Car / Door</span>
       <span class="opacity-30 hidden sm:inline">•</span>
-      <span class="flex items-center gap-1.5"><strong class="text-amber-300 font-medium">Click the Athenaeum</strong> Return</span>
+      <span><strong class="text-cyan-300">J</strong> Story</span>
+      <span class="opacity-30 hidden sm:inline">•</span>
+      <span><strong class="text-cyan-300">M</strong> Map</span>
     </div>
   </footer>
 
-  <!-- Loading Overlay -->
-  <div id="loading-screen" class="fixed inset-0 z-50 bg-[#1a130e] flex flex-col items-center justify-center text-center px-6 fade-out">
-    <div class="w-12 h-12 rounded-full border-2 border-amber-400/25 border-t-amber-300 animate-spin mb-5"></div>
-    <h2 class="font-vintage text-3xl sm:text-4xl text-amber-100 tracking-wide">Vieux Quartier</h2>
-    <p class="text-xs uppercase tracking-[0.22em] text-amber-300/70 mt-2">Preparing cobblestones, lanterns &amp; evening light…</p>
+  <div id="loading-screen" class="fixed inset-0 z-50 bg-[#0d0a16] flex flex-col items-center justify-center text-center px-6">
+    <div class="w-12 h-12 rounded-full border-2 border-cyan-400/25 border-t-cyan-300 animate-spin mb-5"></div>
+    <h2 class="font-vintage text-3xl sm:text-4xl text-white tracking-wide">Leonida Bay &amp; Vieux Quartier</h2>
+    <p class="text-xs uppercase tracking-[0.22em] text-cyan-300/75 mt-2">Loading ocean reflections, neon boulevard &amp; story chapters…</p>
   </div>
 
-  <!-- Main Three.js Application Module -->
   <script type="module">
     import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-    /* =========================================================================
-       1. CONFIGURATION, STATE & LIGHTING PRESETS
-       ========================================================================= */
-    const LIGHTING_PRESETS = {
-      golden: {
-        name: 'Golden Hour',
-        skyTop: new THREE.Color('#3a5473'),
-        skyMid: new THREE.Color('#c88255'),
-        skyHorizon: new THREE.Color('#f7c37c'),
-        fogColor: new THREE.Color('#dfb083'),
-        fogDensity: 0.0085,
-        sunColor: new THREE.Color('#ffb56b'),
-        sunIntensity: 2.8,
-        sunPos: new THREE.Vector3(52, 26, 38),
-        hemiSky: new THREE.Color('#ffd4a3'),
-        hemiGround: new THREE.Color('#5a4635'),
-        hemiIntensity: 0.95,
-        lampIntensity: 1.5,
-        windowEmissive: 0.72,
-        exposure: 1.08
-      },
-      twilight: {
-        name: 'Twilight',
-        skyTop: new THREE.Color('#0c1428'),
-        skyMid: new THREE.Color('#273254'),
-        skyHorizon: new THREE.Color('#734d5d'),
-        fogColor: new THREE.Color('#1f2338'),
-        fogDensity: 0.0115,
-        sunColor: new THREE.Color('#7a94d6'),
-        sunIntensity: 0.75,
-        sunPos: new THREE.Vector3(-40, 34, -30),
-        hemiSky: new THREE.Color('#445588'),
-        hemiGround: new THREE.Color('#1c1614'),
-        hemiIntensity: 0.55,
-        lampIntensity: 3.4,
-        windowEmissive: 1.55,
-        exposure: 1.02
-      },
-      morning: {
-        name: 'Morning Mist',
-        skyTop: new THREE.Color('#6b93b8'),
-        skyMid: new THREE.Color('#b8cdd8'),
-        skyHorizon: new THREE.Color('#efe9dc'),
-        fogColor: new THREE.Color('#d9d9cf'),
-        fogDensity: 0.0105,
-        sunColor: new THREE.Color('#fff2d6'),
-        sunIntensity: 2.35,
-        sunPos: new THREE.Vector3(-48, 38, 32),
-        hemiSky: new THREE.Color('#e6f0f7'),
-        hemiGround: new THREE.Color('#736958'),
-        hemiIntensity: 1.15,
-        lampIntensity: 0.25,
-        windowEmissive: 0.18,
-        exposure: 1.05
-      }
-    };
+    import { LIGHTING_PRESETS, createAtmosphericSky, createOceanWater, ViceColorGradeShader } from './arena/shaders.js';
+    import { createHumanModel, poseHumanDriving, poseHumanWalking, createNameplate, populateCitizensAndNPCs } from './arena/humans.js';
+    import { CarAudioEngine, populateAllVehicles } from './arena/vehicles.js';
+    import { buildLeonidaArena } from './arena/cityWorld.js';
+    import { CHAPTERS, StoryCampaignEngine } from './arena/storyEngine.js';
 
     const TOWN_ENTRY = {
-      position: new THREE.Vector3(-30.2, 1.68, 0),
-      target: new THREE.Vector3(-29.2, 1.68, 0)
+      position: new THREE.Vector3(-51.5, 1.68, 0),
+      target: new THREE.Vector3(-48.5, 1.68, 0)
     };
 
     const state = {
-      currentTime: 'golden',
+      currentTime: 'sunset',
       showHotspots: true,
-      hoveredObject: null,
+      hoveredTarget: null,
       selectedLandmark: null,
-      cameraTransition: null, // { startPos, endPos, startTarget, endTarget, progress, duration }
+      cameraTransition: null,
       keys: {},
       touchMoves: new Set(),
       pointerDownPos: { x: 0, y: 0 },
@@ -456,279 +411,212 @@
       lastPointer: new THREE.Vector2(),
       walkCycle: 0,
       movementAmount: 0,
+      playerVerticalVel: 0,
+      playerHeightOffset: 0,
+      isGrounded: true,
+      cameraMode: 'first',
+      carCameraMode: 'chase',
+      activeCar: null,
+      bloomEnabled: true,
+      gradeEnabled: true,
+      shadowsEnabled: true,
+      soundEnabled: true,
+      lookSensitivity: 1.0,
+      mapModalOpen: false,
+      settingsOpen: false,
+      journalOpen: false,
       isActive: false
     };
 
-    /* =========================================================================
-       2. PROCEDURAL CANVAS TEXTURE GENERATORS
-       ========================================================================= */
-    function createCobblestoneTextures() {
-      const size = 512;
-      const colorCanvas = document.createElement('canvas');
-      colorCanvas.width = size;
-      colorCanvas.height = size;
-      const ctx = colorCanvas.getContext('2d');
-
-      const bumpCanvas = document.createElement('canvas');
-      bumpCanvas.width = size;
-      bumpCanvas.height = size;
-      const bctx = bumpCanvas.getContext('2d');
-
-      // Dark warm mortar base
-      ctx.fillStyle = '#4a4138';
-      ctx.fillRect(0, 0, size, size);
-      bctx.fillStyle = '#222222';
-      bctx.fillRect(0, 0, size, size);
-
-      const rows = 16;
-      const rowH = size / rows;
-      const stonePalette = ['#8c7d6d', '#9b8b78', '#7d7165', '#a6947e', '#86786b', '#75685d'];
-
-      for (let r = 0; r < rows; r++) {
-        const y = r * rowH;
-        const offset = (r % 2) * 20;
-        let x = -offset;
-        while (x < size) {
-          const w = 26 + Math.floor(Math.random() * 14);
-          const h = rowH - 3.5;
-          const color = stonePalette[Math.floor(Math.random() * stonePalette.length)];
-
-          // Draw rounded stone
-          ctx.fillStyle = color;
-          roundRect(ctx, x + 2, y + 2, w - 3, h, 4);
-          ctx.fill();
-
-          // Subtle highlight & wear
-          ctx.fillStyle = 'rgba(255,244,225,0.12)';
-          roundRect(ctx, x + 3, y + 3, w - 6, h * 0.4, 3);
-          ctx.fill();
-
-          // Bump map stone
-          const shade = 165 + Math.floor(Math.random() * 65);
-          bctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-          roundRect(bctx, x + 2, y + 2, w - 3, h, 4);
-          bctx.fill();
-
-          x += w;
-        }
-      }
-
-      // Subtle grit noise
-      for (let i = 0; i < 1800; i++) {
-        const nx = Math.random() * size;
-        const ny = Math.random() * size;
-        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,250,235,0.06)' : 'rgba(30,22,15,0.08)';
-        ctx.fillRect(nx, ny, 2, 2);
-      }
-
-      const map = new THREE.CanvasTexture(colorCanvas);
-      map.colorSpace = THREE.SRGBColorSpace;
-      map.wrapS = map.wrapT = THREE.RepeatWrapping;
-
-      const bumpMap = new THREE.CanvasTexture(bumpCanvas);
-      bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
-
-      return { map, bumpMap };
-    }
-
-    function createSidewalkTexture() {
-      const size = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#9c8f7d';
-      ctx.fillRect(0, 0, size, size);
-
-      const cols = 4;
-      const rows = 4;
-      const cw = size / cols;
-      const ch = size / rows;
-      const tones = ['#c9bca7', '#bfb29c', '#d1c5b1', '#b6a892'];
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          ctx.fillStyle = tones[(r * 3 + c * 5) % tones.length];
-          ctx.fillRect(c * cw + 2, r * ch + 2, cw - 4, ch - 4);
-          ctx.strokeStyle = 'rgba(80,68,55,0.28)';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(c * cw + 2, r * ch + 2, cw - 4, ch - 4);
-        }
-      }
-
-      for (let i = 0; i < 900; i++) {
-        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,250,240,0.08)' : 'rgba(60,48,38,0.07)';
-        ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      return tex;
-    }
-
-    function createPlasterTexture(baseHex) {
-      const size = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = baseHex;
-      ctx.fillRect(0, 0, size, size);
-
-      // Soft mottled plaster clouds
-      for (let i = 0; i < 120; i++) {
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        const r = 10 + Math.random() * 28;
-        const grad = ctx.createRadialGradient(x, y, 1, x, y, r);
-        const light = Math.random() > 0.45;
-        grad.addColorStop(0, light ? 'rgba(255,248,236,0.09)' : 'rgba(72,52,35,0.08)');
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Fine stucco speckles
-      for (let i = 0; i < 1400; i++) {
-        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(40,30,20,0.05)';
-        ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      return tex;
-    }
-
-    function createRoofTileTexture(baseHex, accentHex) {
-      const size = 256;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = baseHex;
-      ctx.fillRect(0, 0, size, size);
-
-      const rows = 10;
-      const cols = 10;
-      const rw = size / cols;
-      const rh = size / rows;
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x = c * rw + (r % 2) * (rw * 0.5) - rw * 0.5;
-          const y = r * rh;
-          ctx.fillStyle = Math.random() > 0.5 ? baseHex : accentHex;
-          ctx.beginPath();
-          ctx.arc(x + rw * 0.5, y + rh * 0.5, rw * 0.52, 0, Math.PI, false);
-          ctx.fill();
-
-          ctx.strokeStyle = 'rgba(28,16,10,0.28)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        }
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(3, 2);
-      return tex;
-    }
-
-    function createSignboardTexture(title, subtitle, bgHex = '#2c221b', textHex = '#f5dfb8') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 160;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = bgHex;
-      ctx.fillRect(0, 0, 512, 160);
-
-      // Ornate double border
-      ctx.strokeStyle = textHex;
-      ctx.lineWidth = 5;
-      ctx.strokeRect(10, 10, 492, 140);
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(19, 19, 474, 122);
-
-      // Title text
-      ctx.fillStyle = textHex;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = 'bold 52px Georgia, serif';
-      ctx.fillText(title, 256, subtitle ? 68 : 82);
-
-      if (subtitle) {
-        ctx.font = 'italic 24px Georgia, serif';
-        ctx.fillStyle = 'rgba(245, 223, 184, 0.82)';
-        ctx.fillText(subtitle, 256, 118);
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      return tex;
-    }
-
-    function createAwningTexture(colorA, colorB) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      const stripes = 8;
-      const sw = 256 / stripes;
-      for (let i = 0; i < stripes; i++) {
-        ctx.fillStyle = i % 2 === 0 ? colorA : colorB;
-        ctx.fillRect(i * sw, 0, sw, 128);
-      }
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      return tex;
-    }
-
-    function roundRect(ctx, x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    }
-
-    /* =========================================================================
-       3. SCENE, CAMERA, RENDERER & SKY DOME
-       ========================================================================= */
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 320);
+    const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 450);
     camera.position.copy(TOWN_ENTRY.position);
     camera.rotation.order = 'YXZ';
     let cameraYaw = -Math.PI / 2;
     let cameraPitch = 0;
-    camera.rotation.set(cameraPitch, cameraYaw, 0, 'YXZ');
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = LIGHTING_PRESETS.golden.exposure;
+    renderer.toneMappingExposure = LIGHTING_PRESETS.sunset.exposure;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
-
     renderer.domElement.tabIndex = 0;
     renderer.domElement.style.touchAction = 'none';
     renderer.domElement.style.cursor = 'grab';
+
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.38, 0.55, 0.8);
+    const gradePass = new ShaderPass(ViceColorGradeShader);
+    const outputPass = new OutputPass();
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+    composer.addPass(gradePass);
+    composer.addPass(outputPass);
+
+    // Sky, Ocean, Fog & Lights
+    const sky = createAtmosphericSky();
+    scene.add(sky.mesh);
+    const ocean = createOceanWater();
+    scene.add(ocean.mesh);
+    scene.fog = new THREE.FogExp2(LIGHTING_PRESETS.sunset.fogColor, LIGHTING_PRESETS.sunset.fogDensity);
+
+    const hemiLight = new THREE.HemisphereLight(LIGHTING_PRESETS.sunset.hemiSky, LIGHTING_PRESETS.sunset.hemiGround, LIGHTING_PRESETS.sunset.hemiIntensity);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(LIGHTING_PRESETS.sunset.sunColor, LIGHTING_PRESETS.sunset.sunIntensity);
+    sunLight.position.copy(LIGHTING_PRESETS.sunset.sunPos);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 260;
+    const d = 88;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.bias = -0.0004;
+    sunLight.shadow.normalBias = 0.03;
+    scene.add(sunLight);
+
+    // PMREM Procedural Environment Reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    let currentEnvRT = null;
+    function updateEnvironmentReflection(p) {
+      const envScene = new THREE.Scene();
+      const sGeo = new THREE.SphereGeometry(20, 20, 14);
+      const sMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        uniforms: { topColor: { value: p.skyTop }, horizonColor: { value: p.skyHorizon }, groundColor: { value: p.hemiGround } },
+        vertexShader: `varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform vec3 topColor,horizonColor,groundColor; varying vec3 vP; void main(){ float h=normalize(vP).y; gl_FragColor=vec4((h>=0.0?mix(horizonColor,topColor,smoothstep(0.0,0.7,h)):mix(horizonColor,groundColor,smoothstep(0.0,-0.5,h)))*1.2,1.0); }`
+      });
+      envScene.add(new THREE.Mesh(sGeo, sMat));
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(1.5, 10, 10), new THREE.MeshBasicMaterial({ color: p.sunGlow }));
+      orb.position.copy(p.sunPos).normalize().multiplyScalar(14);
+      envScene.add(orb);
+      const nextRT = pmremGenerator.fromScene(envScene, 0.035);
+      if (currentEnvRT) currentEnvRT.dispose();
+      currentEnvRT = nextRT;
+      scene.environment = nextRT.texture;
+      sGeo.dispose(); sMat.dispose(); orb.geometry.dispose(); orb.material.dispose();
+    }
+    updateEnvironmentReflection(LIGHTING_PRESETS.sunset);
+
+    // Build City Arena World, Humans, Vehicles & Story Campaign
+    const interactiveLandmarks = [];
+    const hotspotsLayer = document.getElementById('hotspots-layer');
+    function registerLandmark(data) {
+      data.group.traverse((child) => { if (child.isMesh) child.userData.landmarkId = data.id; });
+      const pin = document.createElement('button');
+      pin.className = 'hotspot-pin';
+      pin.innerHTML = `<span class="hotspot-label">${data.name}</span><span class="hotspot-dot"></span>`;
+      pin.addEventListener('click', (e) => { e.stopPropagation(); selectLandmark(data); });
+      hotspotsLayer.appendChild(pin);
+      data.pinEl = pin;
+      interactiveLandmarks.push(data);
+    }
+
+    const world = buildLeonidaArena({ scene, renderer, onRegisterLandmark: registerLandmark });
+    const { pedestrians, storyNPCs } = populateCitizensAndNPCs(scene, world.contactShadowTex);
+    const { drivableCars, aiTraffic, policeUnits } = populateAllVehicles(scene, world.contactShadowTex);
+    const carAudio = new CarAudioEngine();
+
+    // Local Player Human Avatar
+    const localPlayerRig = createHumanModel({
+      coat: '#1d4f6e', pants: '#1c2029', skin: '#dba986',
+      hairColor: '#241913', tieColor: '#ff3d7f', sunglasses: true, shortSleeves: false
+    }, world.contactShadowTex);
+    localPlayerRig.root.position.set(TOWN_ENTRY.position.x, 0.05, TOWN_ENTRY.position.z);
+    localPlayerRig.root.visible = false;
+    scene.add(localPlayerRig.root);
+
+    // Rain & Tire Smoke Particle Pools
+    const rainCount = 750;
+    const rainPositions = new Float32Array(rainCount * 3);
+    for (let i = 0; i < rainCount; i++) {
+      rainPositions[i * 3] = (Math.random() - 0.5) * 90;
+      rainPositions[i * 3 + 1] = Math.random() * 26;
+      rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 90;
+    }
+    const rainGeo = new THREE.BufferGeometry();
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+    const rainPoints = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: '#b7d4f2', size: 0.14, transparent: true, opacity: 0.45 }));
+    rainPoints.visible = false;
+    scene.add(rainPoints);
+
+    const tireSmokePuffs = [];
+    const smokeGeo = new THREE.SphereGeometry(0.28, 7, 7);
+    function spawnTireSmoke(x, z) {
+      const m = new THREE.Mesh(smokeGeo, new THREE.MeshBasicMaterial({ color: '#e2e5eb', transparent: true, opacity: 0.45, depthWrite: false }));
+      m.position.set(x, 0.22, z);
+      scene.add(m);
+      tireSmokePuffs.push({ mesh: m, age: 0 });
+      if (tireSmokePuffs.length > 28) {
+        const old = tireSmokePuffs.shift();
+        scene.remove(old.mesh);
+        old.mesh.material.dispose();
+      }
+    }
+
+    let toastTimeout = 0;
+    function showToast(msg) {
+      const box = document.getElementById('arena-toast');
+      box.firstElementChild.textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => box.classList.add('hidden'), 3600);
+    }
+
+    function applyLightingPreset(presetKey) {
+      const p = LIGHTING_PRESETS[presetKey];
+      if (!p) return;
+      state.currentTime = presetKey;
+      sky.uniforms.topColor.value.copy(p.skyTop);
+      sky.uniforms.midColor.value.copy(p.skyMid);
+      sky.uniforms.horizonColor.value.copy(p.skyHorizon);
+      sky.uniforms.sunDir.value.copy(p.sunPos).normalize();
+      sky.uniforms.sunColor.value.copy(p.sunGlow);
+      sky.uniforms.starIntensity.value = p.starIntensity;
+      ocean.uniforms.uSunDir.value.copy(p.sunPos).normalize();
+      ocean.uniforms.uSunColor.value.copy(p.sunGlow);
+      ocean.uniforms.uSkyColor.value.copy(p.skyHorizon);
+      updateEnvironmentReflection(p);
+
+      scene.fog.color.copy(p.fogColor);
+      scene.fog.density = p.fogDensity;
+      sunLight.color.copy(p.sunColor);
+      sunLight.intensity = p.sunIntensity;
+      sunLight.position.copy(p.sunPos);
+      hemiLight.color.copy(p.hemiSky);
+      hemiLight.groundColor.copy(p.hemiGround);
+      hemiLight.intensity = p.hemiIntensity;
+      world.sharedWindowGlowMat.emissiveIntensity = p.windowEmissive;
+      world.neonMaterials.forEach((m) => { m.emissiveIntensity = p.neonEmissive; });
+      world.streetLampBulbs.forEach((b) => { b.emissiveIntensity = presetKey === 'tropicalNoon' ? 0.25 : 2.2; });
+      renderer.toneMappingExposure = p.exposure;
+      rainPoints.visible = p.rainIntensity > 0;
+
+      document.querySelectorAll('.time-btn').forEach((btn) => {
+        const active = btn.dataset.time === presetKey;
+        btn.className = active
+          ? 'time-btn px-2 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/30 text-amber-100 border border-amber-300/40'
+          : 'time-btn px-2 py-1 rounded-lg text-[11px] font-medium text-white/70 hover:text-white border border-transparent';
+      });
+    }
+
+    const story = new StoryCampaignEngine({
+      scene,
+      onPresetChange: applyLightingPreset,
+      onToast: showToast,
+      onPlayChime: () => carAudio.playChime()
+    });
 
     const playerPosition = new THREE.Vector3(TOWN_ENTRY.position.x, 0, TOWN_ENTRY.position.z);
     const playerVelocity = new THREE.Vector3();
@@ -741,2177 +629,796 @@
       }
     };
 
-    // Gradient Atmospheric Sky Dome
-    const skyUniforms = {
-      topColor: { value: LIGHTING_PRESETS.golden.skyTop.clone() },
-      midColor: { value: LIGHTING_PRESETS.golden.skyMid.clone() },
-      horizonColor: { value: LIGHTING_PRESETS.golden.skyHorizon.clone() }
-    };
-
-    const skyMat = new THREE.ShaderMaterial({
-      uniforms: skyUniforms,
-      side: THREE.BackSide,
-      depthWrite: false,
-      vertexShader: `
-        varying vec3 vWorldPos;
-        void main() {
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPos = worldPos.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPos;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 topColor;
-        uniform vec3 midColor;
-        uniform vec3 horizonColor;
-        varying vec3 vWorldPos;
-        void main() {
-          float h = normalize(vWorldPos).y;
-          vec3 col = mix(horizonColor, midColor, smoothstep(-0.02, 0.25, h));
-          col = mix(col, topColor, smoothstep(0.22, 0.78, h));
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `
-    });
-    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(165, 32, 20), skyMat);
-    scene.add(skyDome);
-
-    scene.fog = new THREE.FogExp2(LIGHTING_PRESETS.golden.fogColor, LIGHTING_PRESETS.golden.fogDensity);
-
-    // Primary Lights
-    const hemiLight = new THREE.HemisphereLight(
-      LIGHTING_PRESETS.golden.hemiSky,
-      LIGHTING_PRESETS.golden.hemiGround,
-      LIGHTING_PRESETS.golden.hemiIntensity
-    );
-    scene.add(hemiLight);
-
-    const sunLight = new THREE.DirectionalLight(
-      LIGHTING_PRESETS.golden.sunColor,
-      LIGHTING_PRESETS.golden.sunIntensity
-    );
-    sunLight.position.copy(LIGHTING_PRESETS.golden.sunPos);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 10;
-    sunLight.shadow.camera.far = 160;
-    const d = 56;
-    sunLight.shadow.camera.left = -d;
-    sunLight.shadow.camera.right = d;
-    sunLight.shadow.camera.top = d;
-    sunLight.shadow.camera.bottom = -d;
-    sunLight.shadow.bias = -0.0004;
-    sunLight.shadow.normalBias = 0.03;
-    scene.add(sunLight);
-
-    /* =========================================================================
-       4. SHARED MATERIALS & COLLECTIONS
-       ========================================================================= */
-    const cobbleTex = createCobblestoneTextures();
-    const sidewalkTex = createSidewalkTexture();
-    const terracottaRoofTex = createRoofTileTexture('#a64b35', '#8c3c29');
-    const slateRoofTex = createRoofTileTexture('#444b54', '#343a42');
-    const ochreRoofTex = createRoofTileTexture('#b36b3d', '#98562d');
-
-    const sharedWindowGlowMat = new THREE.MeshStandardMaterial({
-      color: '#ffe3a8',
-      emissive: new THREE.Color('#ffaa44'),
-      emissiveIntensity: LIGHTING_PRESETS.golden.windowEmissive,
-      roughness: 0.25,
-      metalness: 0.1
-    });
-
-    const wroughtIronMat = new THREE.MeshStandardMaterial({
-      color: '#232224',
-      roughness: 0.45,
-      metalness: 0.72
-    });
-
-    const darkWoodMat = new THREE.MeshStandardMaterial({
-      color: '#4e3424',
-      roughness: 0.82,
-      metalness: 0.05
-    });
-
-    const warmStoneMat = new THREE.MeshStandardMaterial({
-      color: '#cfc2ad',
-      roughness: 0.88,
-      metalness: 0.02
-    });
-
-    const interactiveLandmarks = []; // { id, name, category, style, era, desc, features, group, focusPos, focusTarget, hotspotPos }
-    const walkObstacles = [];
-    const streetLampLights = [];
-    const streetLampBulbs = [];
-    const chimneySources = [];
-    const swayingTrees = [];
-    let clockHands = { hour: null, minute: null };
-    let fountainWaterMesh = null;
-    const fountainDroplets = [];
-
-    /* =========================================================================
-       5. GROUND, ROADS, SIDEWALKS & CENTRAL PLAZA
-       ========================================================================= */
-    function buildEnvironmentBase() {
-      // Countryside meadow base outside town
-      const groundMat = new THREE.MeshStandardMaterial({
-        color: '#6b7752',
-        roughness: 0.96
-      });
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), groundMat);
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.y = -0.05;
-      ground.receiveShadow = true;
-      scene.add(ground);
-
-      // Town cobblestone bed
-      const mainRoadMat = new THREE.MeshStandardMaterial({
-        map: cobbleTex.map.clone(),
-        bumpMap: cobbleTex.bumpMap.clone(),
-        bumpScale: 0.14,
-        roughness: 0.84,
-        metalness: 0.06
-      });
-      mainRoadMat.map.repeat.set(16, 16);
-      mainRoadMat.bumpMap.repeat.set(16, 16);
-
-      const townBase = new THREE.Mesh(new THREE.BoxGeometry(92, 0.1, 92), mainRoadMat);
-      townBase.position.y = -0.05;
-      townBase.receiveShadow = true;
-      scene.add(townBase);
-
-      // A distinct cobbled approach joins the library steps to the town's west avenue.
-      const libraryPathMat = new THREE.MeshStandardMaterial({
-        map: sidewalkTex.clone(),
-        roughness: 0.86,
-        metalness: 0.025
-      });
-      libraryPathMat.map.repeat.set(8, 1.5);
-      const libraryPath = new THREE.Mesh(new THREE.PlaneGeometry(27, 5), libraryPathMat);
-      libraryPath.rotation.x = -Math.PI / 2;
-      libraryPath.position.set(-19.5, 0.018, 0);
-      libraryPath.receiveShadow = true;
-      scene.add(libraryPath);
-      [-2.58, 2.58].forEach((z) => {
-        const edging = new THREE.Mesh(new THREE.BoxGeometry(27, 0.07, 0.12), warmStoneMat);
-        edging.position.set(-19.5, 0.035, z);
-        edging.receiveShadow = true;
-        scene.add(edging);
-      });
-
-      // Central Plaza (Place de la Fontaine) raised stone ring
-      const plazaMat = new THREE.MeshStandardMaterial({
-        map: sidewalkTex.clone(),
-        roughness: 0.82
-      });
-      plazaMat.map.repeat.set(6, 6);
-
-      const plazaOuter = new THREE.Mesh(new THREE.CylinderGeometry(11.6, 11.9, 0.16, 32), warmStoneMat);
-      plazaOuter.position.y = 0.04;
-      plazaOuter.receiveShadow = true;
-      scene.add(plazaOuter);
-
-      const plazaInner = new THREE.Mesh(new THREE.CylinderGeometry(10.8, 10.8, 0.18, 32), plazaMat);
-      plazaInner.position.y = 0.05;
-      plazaInner.receiveShadow = true;
-      scene.add(plazaInner);
-
-      // Four Quadrant Sidewalk Blocks (leaving roads at x=0, z=0, and outer lanes)
-      const blockMat = new THREE.MeshStandardMaterial({
-        map: sidewalkTex.clone(),
-        roughness: 0.85
-      });
-      blockMat.map.repeat.set(5, 5);
-
-      const blockConfigs = [
-        { x: -20, z: -20, w: 26, d: 26 },
-        { x: 20, z: -20, w: 26, d: 26 },
-        { x: -20, z: 20, w: 26, d: 26 },
-        { x: 20, z: 20, w: 26, d: 26 }
-      ];
-
-      blockConfigs.forEach((b) => {
-        // Curb stone slab
-        const slab = new THREE.Mesh(new THREE.BoxGeometry(b.w, 0.22, b.d), blockMat);
-        slab.position.set(b.x, 0.11, b.z);
-        slab.receiveShadow = true;
-        slab.castShadow = true;
-        scene.add(slab);
-      });
-
-      // Decorative stone crosswalk stripes around the central intersection
-      const stripeMat = new THREE.MeshStandardMaterial({ color: '#ddd1bc', roughness: 0.86 });
-      const crosswalks = [
-        { x: 0, z: 13.5, rot: 0 },
-        { x: 0, z: -13.5, rot: 0 },
-        { x: 13.5, z: 0, rot: Math.PI / 2 },
-        { x: -13.5, z: 0, rot: Math.PI / 2 }
-      ];
-      crosswalks.forEach((cw) => {
-        const cwGroup = new THREE.Group();
-        cwGroup.position.set(cw.x, 0.025, cw.z);
-        cwGroup.rotation.y = cw.rot;
-        for (let i = -2; i <= 2; i++) {
-          const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.03, 2.5), stripeMat);
-          stripe.position.x = i * 1.45;
-          stripe.receiveShadow = true;
-          cwGroup.add(stripe);
-        }
-        scene.add(cwGroup);
-      });
-
-      // Cobblestone bollards around the plaza rim
-      for (let i = 0; i < 16; i++) {
-        const angle = (i / 16) * Math.PI * 2;
-        // Leave openings at the 4 cardinal road entries
-        if (Math.abs(Math.sin(angle)) < 0.28 || Math.abs(Math.cos(angle)) < 0.28) continue;
-        const bx = Math.cos(angle) * 11.2;
-        const bz = Math.sin(angle) * 11.2;
-        const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.72, 10), wroughtIronMat);
-        bollard.position.set(bx, 0.42, bz);
-        bollard.castShadow = true;
-        scene.add(bollard);
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), wroughtIronMat);
-        cap.position.set(bx, 0.8, bz);
-        scene.add(cap);
-      }
-    }
-
-    /* =========================================================================
-       6. CENTRAL STONE FOUNTAIN (INTERACTIVE LANDMARK)
-       ========================================================================= */
-    function buildCentralFountain() {
-      const group = new THREE.Group();
-      group.position.set(0, 0.14, 0);
-
-      // Octagonal outer basin
-      const basinWall = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.6, 0.85, 12), warmStoneMat);
-      basinWall.position.y = 0.425;
-      basinWall.castShadow = true;
-      basinWall.receiveShadow = true;
-      group.add(basinWall);
-
-      const basinRim = new THREE.Mesh(new THREE.TorusGeometry(3.35, 0.22, 10, 24), warmStoneMat);
-      basinRim.rotation.x = Math.PI / 2;
-      basinRim.position.y = 0.86;
-      basinRim.castShadow = true;
-      group.add(basinRim);
-
-      // Animated Water Surface
-      const waterMat = new THREE.MeshStandardMaterial({
-        color: '#5fa1a6',
-        roughness: 0.12,
-        metalness: 0.35,
-        transparent: true,
-        opacity: 0.86
-      });
-      fountainWaterMesh = new THREE.Mesh(new THREE.CylinderGeometry(3.15, 3.15, 0.12, 24), waterMat);
-      fountainWaterMesh.position.y = 0.72;
-      group.add(fountainWaterMesh);
-
-      // Central Pedestal & Upper Tier
-      const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.95, 2.2, 12), warmStoneMat);
-      pedestal.position.y = 1.45;
-      pedestal.castShadow = true;
-      group.add(pedestal);
-
-      const midBowl = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 0.65, 0.55, 16), warmStoneMat);
-      midBowl.position.y = 2.45;
-      midBowl.castShadow = true;
-      group.add(midBowl);
-
-      const topSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.45, 1.15, 10), warmStoneMat);
-      topSpire.position.y = 3.2;
-      topSpire.castShadow = true;
-      group.add(topSpire);
-
-      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), warmStoneMat);
-      finial.position.y = 3.9;
-      group.add(finial);
-
-      // Animated Water Droplet Particles
-      const dropGeo = new THREE.SphereGeometry(0.065, 6, 6);
-      const dropMat = new THREE.MeshStandardMaterial({
-        color: '#d8f4f8',
-        emissive: '#76b5c2',
-        emissiveIntensity: 0.3,
-        roughness: 0.1,
-        transparent: true,
-        opacity: 0.8
-      });
-
-      for (let i = 0; i < 24; i++) {
-        const drop = new THREE.Mesh(dropGeo, dropMat);
-        const angle = (i / 24) * Math.PI * 2;
-        drop.userData = {
-          angle,
-          phase: Math.random(),
-          speed: 0.55 + Math.random() * 0.35,
-          radius: 0.7 + Math.random() * 1.4
-        };
-        group.add(drop);
-        fountainDroplets.push(drop);
-      }
-
-      scene.add(group);
-      walkObstacles.push({ minX: -3.85, maxX: 3.85, minZ: -3.85, maxZ: 3.85 });
-
-      registerLandmark({
-        id: 'fountain',
-        name: 'Fontaine de la Place',
-        category: 'Historic Landmark',
-        style: 'Neoclassical Carved Limestone',
-        era: 'Built 1842',
-        desc: 'The beloved gathering heart of Vieux Quartier. Sculpted from local golden limestone, its tiered basin has cooled travelers, artists, and neighborhood residents for nearly two centuries.',
-        features: [
-          'Twelve-sided carved limestone basin with rolled coping rim',
-          'Two-tiered classical pedestal with continuous spring-fed jets',
-          'Surrounded by wrought-iron bollards and shaded oak benches'
-        ],
-        group,
-        focusPos: new THREE.Vector3(9.5, 1.68, 9.5),
-        focusTarget: new THREE.Vector3(0, 1.8, 0),
-        hotspotPos: new THREE.Vector3(0, 4.9, 0)
-      });
-    }
-
-    /* =========================================================================
-       7. VINTAGE BUILDING GENERATOR & 10 DISTINCT BUILDINGS
-       ========================================================================= */
-    function createVintageBuilding(cfg) {
-      const group = new THREE.Group();
-      group.position.set(cfg.x, 0.22, cfg.z);
-      group.rotation.y = cfg.rotY || 0;
-
-      const { w, h, d } = cfg.size;
-      const yaw = cfg.rotY || 0;
-      const halfX = (Math.abs(Math.cos(yaw)) * w + Math.abs(Math.sin(yaw)) * d) / 2;
-      const halfZ = (Math.abs(Math.sin(yaw)) * w + Math.abs(Math.cos(yaw)) * d) / 2;
-      walkObstacles.push({ minX: cfg.x - halfX, maxX: cfg.x + halfX, minZ: cfg.z - halfZ, maxZ: cfg.z + halfZ });
-      const wallTex = createPlasterTexture(cfg.wallColor);
-      const wallMat = new THREE.MeshStandardMaterial({
-        map: wallTex,
-        roughness: 0.88,
-        metalness: 0.02
-      });
-
-      const trimMat = new THREE.MeshStandardMaterial({
-        color: cfg.trimColor || '#e8dcc8',
-        roughness: 0.82
-      });
-
-      const shutterMat = new THREE.MeshStandardMaterial({
-        color: cfg.shutterColor || '#4b6352',
-        roughness: 0.75
-      });
-
-      // Main Building Body
-      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
-      body.position.y = h / 2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
-
-      // Stone plinth / foundation band
-      const plinth = new THREE.Mesh(new THREE.BoxGeometry(w + 0.22, 0.75, d + 0.22), warmStoneMat);
-      plinth.position.y = 0.375;
-      plinth.receiveShadow = true;
-      group.add(plinth);
-
-      // Optional colored shopfront lower fascia
-      if (cfg.shopfrontColor) {
-        const sfMat = new THREE.MeshStandardMaterial({ color: cfg.shopfrontColor, roughness: 0.72 });
-        const sf = new THREE.Mesh(new THREE.BoxGeometry(w + 0.14, 3.1, 0.24), sfMat);
-        sf.position.set(0, 1.7, d / 2 + 0.04);
-        sf.castShadow = true;
-        group.add(sf);
-      }
-
-      // Decorative Cornices (mid-floor and roofline)
-      const topCornice = new THREE.Mesh(new THREE.BoxGeometry(w + 0.45, 0.35, d + 0.45), trimMat);
-      topCornice.position.y = h - 0.12;
-      topCornice.castShadow = true;
-      group.add(topCornice);
-
-      if (cfg.floors >= 2) {
-        const midBand = new THREE.Mesh(new THREE.BoxGeometry(w + 0.22, 0.22, d + 0.22), trimMat);
-        midBand.position.y = 3.55;
-        group.add(midBand);
-      }
-
-      // Corner Stone Quoins (for stately buildings)
-      if (cfg.hasQuoins) {
-        for (let qy = 0.9; qy < h - 0.5; qy += 0.95) {
-          const quoinGeo = new THREE.BoxGeometry(0.45, 0.42, 0.45);
-          [[-w / 2, d / 2], [w / 2, d / 2], [-w / 2, -d / 2], [w / 2, -d / 2]].forEach(([qx, qz]) => {
-            const q = new THREE.Mesh(quoinGeo, trimMat);
-            q.position.set(qx, qy, qz);
-            group.add(q);
-          });
-        }
-      }
-
-      // Half-timbering (Colombage) beams for historic inn
-      if (cfg.halfTimber) {
-        const beamMat = darkWoodMat;
-        for (let bx = -w / 2 + 0.2; bx <= w / 2 - 0.2; bx += (w - 0.4) / 4) {
-          const vBeam = new THREE.Mesh(new THREE.BoxGeometry(0.2, h - 3.6, 0.16), beamMat);
-          vBeam.position.set(bx, 3.6 + (h - 3.6) / 2, d / 2 + 0.04);
-          group.add(vBeam);
-        }
-        const hBeam = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, 0.22, 0.18), beamMat);
-        hBeam.position.set(0, h - 1.7, d / 2 + 0.04);
-        group.add(hBeam);
-      }
-
-      // Roof Construction (Pitched, Mansard, or Hipped)
-      const roofTex = cfg.roofType === 'mansard' ? slateRoofTex : (cfg.roofColor === 'ochre' ? ochreRoofTex : terracottaRoofTex);
-      const roofMat = new THREE.MeshStandardMaterial({
-        map: roofTex,
-        roughness: 0.78,
-        metalness: 0.08
-      });
-
-      let roofPeakY = h;
-      if (cfg.roofType === 'mansard') {
-        const mansardH = 2.6;
-        const mansard = new THREE.Mesh(
-          new THREE.CylinderGeometry(Math.min(w, d) * 0.52, Math.max(w, d) * 0.73, mansardH, 4),
-          roofMat
-        );
-        mansard.rotation.y = Math.PI / 4;
-        mansard.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
-        mansard.position.y = h + mansardH / 2;
-        mansard.castShadow = true;
-        group.add(mansard);
-        roofPeakY = h + mansardH;
-
-        // Dormer Windows on Mansard
-        const dormerCount = w > 7.5 ? 2 : 1;
-        for (let i = 0; i < dormerCount; i++) {
-          const dx = dormerCount === 1 ? 0 : (i === 0 ? -w * 0.22 : w * 0.22);
-          const dormer = new THREE.Group();
-          const dBox = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.35, 1.1), trimMat);
-          const dPane = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.95), sharedWindowGlowMat);
-          dPane.position.z = 0.56;
-          const dCap = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.65, 4), roofMat);
-          dCap.rotation.y = Math.PI / 4;
-          dCap.position.y = 0.98;
-          dormer.add(dBox, dPane, dCap);
-          dormer.position.set(dx, h + 1.05, d / 2 - 0.55);
-          group.add(dormer);
-        }
-      } else {
-        // Classic Pitched / Gabled Roof
-        const roofH = cfg.roofHeight || 2.9;
-        const shape = new THREE.Shape();
-        shape.moveTo(-w / 2 - 0.35, 0);
-        shape.lineTo(0, roofH);
-        shape.lineTo(w / 2 + 0.35, 0);
-        shape.closePath();
-
-        const extrudeSettings = { depth: d + 0.7, bevelEnabled: false };
-        const roofGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        roofGeo.translate(0, 0, -(d + 0.7) / 2);
-        const roof = new THREE.Mesh(roofGeo, roofMat);
-        roof.position.y = h;
-        roof.castShadow = true;
-        roof.receiveShadow = true;
-        group.add(roof);
-        roofPeakY = h + roofH;
-      }
-
-      // Chimney + Smoke Emitter
-      const chimX = w * 0.26;
-      const chimZ = -d * 0.15;
-      const chimH = 2.1;
-      const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.82, chimH, 0.82), warmStoneMat);
-      chimney.position.set(chimX, roofPeakY - 0.5 + chimH / 2, chimZ);
-      chimney.castShadow = true;
-      group.add(chimney);
-
-      const chimCap = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.18, 1.02), darkWoodMat);
-      chimCap.position.set(chimX, roofPeakY - 0.5 + chimH + 0.08, chimZ);
-      group.add(chimCap);
-
-      if (cfg.hasSmoke) {
-        const worldSmokePos = new THREE.Vector3(chimX, roofPeakY - 0.5 + chimH + 0.3, chimZ);
-        group.updateMatrixWorld(true);
-        worldSmokePos.applyMatrix4(group.matrixWorld);
-        chimneySources.push(worldSmokePos);
-      }
-
-      // Ground-Floor Doorway
-      const doorX = cfg.doorOffset || 0;
-      const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.55, 2.65, 0.28), trimMat);
-      doorFrame.position.set(doorX, 1.5, d / 2 + 0.06);
-      group.add(doorFrame);
-
-      const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.25, 2.4, 0.18), darkWoodMat);
-      doorLeaf.position.set(doorX, 1.42, d / 2 + 0.12);
-      group.add(doorLeaf);
-
-      // Door brass handle
-      const handle = new THREE.Mesh(
-        new THREE.SphereGeometry(0.06, 8, 8),
-        new THREE.MeshStandardMaterial({ color: '#d8b268', metalness: 0.8, roughness: 0.25 })
-      );
-      handle.position.set(doorX + 0.42, 1.35, d / 2 + 0.24);
-      group.add(handle);
-
-      // Shop Display Window (if shop)
-      if (cfg.isShop) {
-        const winX = doorX <= 0 ? w * 0.24 : -w * 0.24;
-        const shopWinFrame = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.0, 0.24), trimMat);
-        shopWinFrame.position.set(winX, 1.65, d / 2 + 0.08);
-        group.add(shopWinFrame);
-
-        const shopGlass = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.7), sharedWindowGlowMat);
-        shopGlass.position.set(winX, 1.65, d / 2 + 0.21);
-        group.add(shopGlass);
-      }
-
-      // Striped Awning (for Bakery, Café, Tailor, Florist)
-      if (cfg.awning) {
-        const awnTex = createAwningTexture(cfg.awning[0], cfg.awning[1]);
-        const awnMat = new THREE.MeshStandardMaterial({ map: awnTex, roughness: 0.85, side: THREE.DoubleSide });
-        const awnW = w * 0.78;
-        const awn = new THREE.Mesh(new THREE.BoxGeometry(awnW, 0.1, 1.7), awnMat);
-        awn.position.set(0, 3.05, d / 2 + 0.82);
-        awn.rotation.x = 0.26;
-        awn.castShadow = true;
-        group.add(awn);
-      }
-
-      // Vintage Hanging or Mounted Signboard
-      if (cfg.signText) {
-        const signTex = createSignboardTexture(cfg.signText, cfg.signSub || '', cfg.signBg || '#2c221b');
-        const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.65 });
-        const signBoard = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.68, 4.4), 0.92, 0.14), signMat);
-        signBoard.position.set(0, 3.65, d / 2 + 0.18);
-        signBoard.castShadow = true;
-        group.add(signBoard);
-      }
-
-      // Upper-Floor Windows with Shutters, Flower Boxes & Optional Balconies
-      const upperFloors = cfg.floors - 1;
-      const winCols = w >= 8.5 ? 3 : 2;
-
-      for (let f = 0; f < upperFloors; f++) {
-        const wy = 4.9 + f * 3.1;
-        for (let c = 0; c < winCols; c++) {
-          const frac = winCols === 2 ? (c === 0 ? -0.25 : 0.25) : (c - 1) * 0.3;
-          const wx = frac * w;
-
-          // Window casing & glowing glass
-          const wFrame = new THREE.Mesh(new THREE.BoxGeometry(1.38, 1.85, 0.18), trimMat);
-          wFrame.position.set(wx, wy, d / 2 + 0.04);
-          group.add(wFrame);
-
-          const wGlass = new THREE.Mesh(new THREE.PlaneGeometry(1.12, 1.56), sharedWindowGlowMat);
-          wGlass.position.set(wx, wy, d / 2 + 0.14);
-          group.add(wGlass);
-
-          // Cross mullions
-          const mulV = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.58, 0.05), trimMat);
-          mulV.position.set(wx, wy, d / 2 + 0.15);
-          const mulH = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.06, 0.05), trimMat);
-          mulH.position.set(wx, wy + 0.12, d / 2 + 0.15);
-          group.add(mulV, mulH);
-
-          // Wooden Shutters
-          const shutterGeo = new THREE.BoxGeometry(0.42, 1.75, 0.08);
-          const leftS = new THREE.Mesh(shutterGeo, shutterMat);
-          leftS.position.set(wx - 0.88, wy, d / 2 + 0.08);
-          const rightS = new THREE.Mesh(shutterGeo, shutterMat);
-          rightS.position.set(wx + 0.88, wy, d / 2 + 0.08);
-          group.add(leftS, rightS);
-
-          // Window Flower Box with Blooms
-          if ((f === 0 && cfg.hasFlowerBoxes) || (f === 0 && c === 1)) {
-            const box = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.28, 0.32), darkWoodMat);
-            box.position.set(wx, wy - 0.96, d / 2 + 0.22);
-            group.add(box);
-
-            const foliageMat = new THREE.MeshStandardMaterial({ color: '#4d7344', roughness: 0.9 });
-            const bloomColors = ['#d95d54', '#f0b857', '#d87d8b'];
-            for (let b = -1; b <= 1; b++) {
-              const leaf = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18, 0), foliageMat);
-              leaf.position.set(wx + b * 0.36, wy - 0.78, d / 2 + 0.24);
-              group.add(leaf);
-              const bloom = new THREE.Mesh(
-                new THREE.SphereGeometry(0.08, 6, 6),
-                new THREE.MeshStandardMaterial({ color: bloomColors[(c + b + 3) % 3], roughness: 0.7 })
-              );
-              bloom.position.set(wx + b * 0.36 + 0.05, wy - 0.68, d / 2 + 0.32);
-              group.add(bloom);
-            }
-          }
-        }
-
-        // Wrought-Iron Balcony on first upper floor
-        if (f === 0 && cfg.hasBalcony) {
-          const balW = w * 0.76;
-          const balFloor = new THREE.Mesh(new THREE.BoxGeometry(balW, 0.16, 1.05), warmStoneMat);
-          balFloor.position.set(0, wy - 1.0, d / 2 + 0.52);
-          balFloor.castShadow = true;
-          group.add(balFloor);
-
-          const railTop = new THREE.Mesh(new THREE.BoxGeometry(balW, 0.06, 0.06), wroughtIronMat);
-          railTop.position.set(0, wy - 0.15, d / 2 + 1.0);
-          group.add(railTop);
-
-          const barCount = Math.floor(balW * 3);
-          for (let bi = 0; bi <= barCount; bi++) {
-            const bx = -balW / 2 + (bi / barCount) * balW;
-            const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 6), wroughtIronMat);
-            bar.position.set(bx, wy - 0.58, d / 2 + 1.0);
-            group.add(bar);
-          }
-        }
-      }
-
-      // Facade Clock (specifically for Clockmaker's Workshop)
-      if (cfg.hasClock) {
-        const clockGroup = new THREE.Group();
-        clockGroup.position.set(0, h - 1.15, d / 2 + 0.16);
-
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.09, 10, 24), wroughtIronMat);
-        const face = new THREE.Mesh(
-          new THREE.CircleGeometry(0.72, 24),
-          new THREE.MeshStandardMaterial({ color: '#fbf3e0', emissive: '#f5d28e', emissiveIntensity: 0.35 })
-        );
-        clockGroup.add(rim, face);
-
-        const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.04), wroughtIronMat);
-        hourHand.geometry.translate(0, 0.15, 0);
-        hourHand.position.z = 0.04;
-
-        const minHand = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.54, 0.04), wroughtIronMat);
-        minHand.geometry.translate(0, 0.22, 0);
-        minHand.position.z = 0.06;
-
-        clockGroup.add(hourHand, minHand);
-        group.add(clockGroup);
-        clockHands.hour = hourHand;
-        clockHands.minute = minHand;
-      }
-
-      // Side windows for architectural completeness
-      for (let sy = 4.9; sy < h - 1.2; sy += 3.1) {
-        [-1, 1].forEach((side) => {
-          const sw = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.35), sharedWindowGlowMat);
-          sw.position.set(side * (w / 2 + 0.04), sy, 0);
-          sw.rotation.y = side * (Math.PI / 2);
-          group.add(sw);
-        });
-      }
-
-      scene.add(group);
-
-      // Compute flattering cinematic camera focus point in front of building facade
-      const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cfg.rotY || 0);
-      const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), cfg.rotY || 0);
-      const center = new THREE.Vector3(cfg.x, h * 0.48, cfg.z);
-      const focusPos = center
-        .clone()
-        .addScaledVector(forward, Math.max(w, d) * 1.45 + 6.5)
-        .addScaledVector(right, 3.2);
-      focusPos.y = 1.68;
-
-      registerLandmark({
-        id: cfg.id,
-        name: cfg.name,
-        category: cfg.category,
-        style: cfg.style,
-        era: cfg.era,
-        desc: cfg.desc,
-        features: cfg.features,
-        group,
-        focusPos,
-        focusTarget: center,
-        hotspotPos: new THREE.Vector3(cfg.x, roofPeakY + 1.6, cfg.z)
-      });
-
-      return group;
-    }
-
-    function buildTownArchitecture() {
-      const buildings = [
-        {
-          id: 'boulangerie',
-          name: 'Boulangerie Dorée',
-          category: 'Artisan Bakery',
-          style: 'Provincial Second Empire',
-          era: 'Est. 1886',
-          desc: 'Every morning at dawn, the warm scent of wood-fired sourdough and butter croissants drifts across the plaza from this corner bakery. Its brass-trimmed display window still showcases pastries baked in the original brick hearth.',
-          features: [
-            'Burgundy-and-cream striped canvas storefront awning',
-            'Slate mansard roof with twin attic dormer windows',
-            'Active brick hearth chimney releasing gentle woodsmoke'
-          ],
-          x: -14.5, z: -13.5, rotY: Math.PI * 0.25,
-          size: { w: 7.4, h: 7.6, d: 6.4 }, floors: 2,
-          wallColor: '#e8d4b4', trimColor: '#f4ead8', shutterColor: '#6d3832',
-          shopfrontColor: '#5e302b', roofType: 'mansard',
-          awning: ['#7f2d2a', '#f2e6cf'], signText: 'BOULANGERIE', signSub: 'Pain & Pâtisserie',
-          isShop: true, doorOffset: -1.6, hasBalcony: true, hasFlowerBoxes: true, hasSmoke: true
-        },
-        {
-          id: 'cafe',
-          name: 'Café de la Place',
-          category: 'Historic Corner Café',
-          style: 'Belle Époque Parisian',
-          era: 'Est. 1894',
-          desc: 'A sunlit gathering parlor overlooking the central fountain. Poets, watercolorists, and neighbors linger at its wrought-iron terrace tables over espresso and apricot tarts as dusk settles over the cobblestones.',
-          features: [
-            'Sage-green timber facade with gold-lettered signboard',
-            'Outdoor bistro terrace with marble-topped café tables',
-            'Full-width second-story wrought-iron Juliet balcony'
-          ],
-          x: 14.5, z: -13.5, rotY: -Math.PI * 0.25,
-          size: { w: 8.2, h: 8.0, d: 6.6 }, floors: 2,
-          wallColor: '#dfd2ba', trimColor: '#f5efe2', shutterColor: '#48604d',
-          shopfrontColor: '#3f5947', roofType: 'mansard',
-          awning: ['#3e5c48', '#f4ebd9'], signText: 'CAFÉ DE LA PLACE', signSub: 'Terrasse & Salon',
-          isShop: true, doorOffset: 1.8, hasBalcony: true, hasFlowerBoxes: true, hasSmoke: true
-        },
-        {
-          id: 'bookstore',
-          name: 'Librairie Ancienne',
-          category: 'Antiquarian Bookstore',
-          style: 'Old-Quarter Timber & Plaster',
-          era: 'c. 1852',
-          desc: 'Crammed floor-to-ceiling with leather-bound travelogues, copperplate maps, and forgotten novels. The warm amber glow from its ground-floor display invites passersby to pause and browse rare editions.',
-          features: [
-            'Warm ochre weathered stucco with deep walnut shutters',
-            'Steeply pitched terracotta clay-tile gable roof',
-            'Hand-painted mahogany fascia board'
-          ],
-          x: -24.5, z: -14.0, rotY: 0,
-          size: { w: 6.8, h: 7.4, d: 6.2 }, floors: 2,
-          wallColor: '#d9b078', trimColor: '#efe1c6', shutterColor: '#4a3525',
-          shopfrontColor: '#473021', roofType: 'pitched', roofColor: 'terracotta',
-          signText: 'LIBRAIRIE', signSub: 'Livres Rares',
-          isShop: true, doorOffset: -1.4, hasFlowerBoxes: true, hasSmoke: false
-        },
-        {
-          id: 'clockmaker',
-          name: 'Horlogerie du Temps',
-          category: 'Clockmaker’s Workshop',
-          style: 'Narrow Guild Townhouse',
-          era: 'Built 1829',
-          desc: 'Home to four generations of master horologists. Its tall, slender facade features a working gilded timepiece that chimes softly on the hour across the eastern lane.',
-          features: [
-            'Working animated facade clock with wrought-iron rim',
-            'Three-story narrow guild proportions with high pitched gable',
-            'Carved sandstone corner quoins and deep slate shutters'
-          ],
-          x: 24.5, z: -14.0, rotY: 0,
-          size: { w: 6.0, h: 10.2, d: 6.0 }, floors: 3,
-          wallColor: '#d8c5a8', trimColor: '#ede4d3', shutterColor: '#3d4b57',
-          shopfrontColor: '#2f3a44', roofType: 'pitched', roofColor: 'ochre', roofHeight: 3.4,
-          signText: 'HORLOGERIE', signSub: 'Atelier d’Art',
-          isShop: true, doorOffset: 1.2, hasQuoins: true, hasClock: true, hasSmoke: true
-        },
-        {
-          id: 'florist',
-          name: 'Fleuriste Lumière',
-          category: 'Botanical & Flower Shop',
-          style: 'Provençal Cottage Townhouse',
-          era: 'c. 1874',
-          desc: 'Bursting with lavender bundles, climbing roses, and terracotta pots spilling onto the sidewalk. Sunlight catches its warm blush-ochre plaster walls throughout the golden hour.',
-          features: [
-            'Warm terracotta-blush limewash plaster facade',
-            'Blooming window boxes on every upper casement',
-            'Striped linen sun awning shading fresh cut stems'
-          ],
-          x: -14.5, z: 13.5, rotY: Math.PI * 0.75,
-          size: { w: 7.2, h: 7.2, d: 6.2 }, floors: 2,
-          wallColor: '#dfb49b', trimColor: '#f6ead9', shutterColor: '#567052',
-          shopfrontColor: '#536b4f', roofType: 'pitched', roofColor: 'terracotta',
-          awning: ['#b56649', '#f5ecdb'], signText: 'FLEURISTE', signSub: 'Fleurs & Jardins',
-          isShop: true, doorOffset: -1.5, hasFlowerBoxes: true, hasSmoke: false
-        },
-        {
-          id: 'apothecary',
-          name: 'L’Apothicaire Royal',
-          category: 'Historic Apothecary',
-          style: 'Neoclassical Corner Shop',
-          era: 'Est. 1861',
-          desc: 'Beneath its deep teal timber storefront lie rows of hand-blown amber glass tinctures, dried botanicals, and brass scales preserved from the nineteenth century.',
-          features: [
-            'Deep Prussian-teal wood shopfront with gilt lettering',
-            'Limestone quoins and classical cornice moldings',
-            'Slate mansard roof with dormer window'
-          ],
-          x: 14.5, z: 13.5, rotY: -Math.PI * 0.75,
-          size: { w: 7.6, h: 8.2, d: 6.4 }, floors: 2,
-          wallColor: '#e6dcc8', trimColor: '#f4eee2', shutterColor: '#365458',
-          shopfrontColor: '#2b474b', roofType: 'mansard',
-          signText: 'APOTHICAIRE', signSub: 'Herboristerie',
-          isShop: true, doorOffset: 1.6, hasQuoins: true, hasBalcony: true, hasSmoke: true
-        },
-        {
-          id: 'tailor',
-          name: 'Atelier de Couture',
-          category: 'Bespoke Tailor’s Atelier',
-          style: 'Late 19th-Century Bourgeois',
-          era: 'Built 1891',
-          desc: 'Tall French casements flood the upper workroom with natural light where wool coats and linen waistcoats are cut and hand-stitched to measure.',
-          features: [
-            'Warm cream limestone facade with olive-striped awning',
-            'Generous three-bay upper windows with wrought-iron railings',
-            'Ochre clay-tile pitched roof'
-          ],
-          x: -24.5, z: 14.0, rotY: Math.PI,
-          size: { w: 7.4, h: 8.0, d: 6.2 }, floors: 2,
-          wallColor: '#e4d8c0', trimColor: '#f5efe3', shutterColor: '#5d6647',
-          shopfrontColor: '#4e543c', roofType: 'pitched', roofColor: 'ochre',
-          awning: ['#636c49', '#efe6d4'], signText: 'ATELIER', signSub: 'Tailleur & Soie',
-          isShop: true, doorOffset: -1.6, hasBalcony: true, hasFlowerBoxes: true
-        },
-        {
-          id: 'grand_townhouse',
-          name: 'Maison de la Fontaine',
-          category: 'Grand Townhouse',
-          style: 'Haussmannian Beaux-Arts',
-          era: 'Built 1878',
-          desc: 'The tallest residence in the quarter, built for a retired magistrate. Its symmetrical three-story limestone facade, carved stone quoins, and sweeping iron balcony anchor the southern avenue.',
-          features: [
-            'Three-story symmetrical limestone facade with stone quoins',
-            'Ornate slate mansard roof with twin dormer windows',
-            'Grand oak entrance portal and wide wrought-iron balcony'
-          ],
-          x: 24.5, z: 14.0, rotY: Math.PI,
-          size: { w: 9.0, h: 10.6, d: 7.0 }, floors: 3,
-          wallColor: '#dfd3be', trimColor: '#f3ece0', shutterColor: '#4b555c',
-          roofType: 'mansard', hasQuoins: true, hasBalcony: true, hasFlowerBoxes: true, hasSmoke: true
-        },
-        {
-          id: 'manor',
-          name: 'Villa des Glycines',
-          category: 'Residential Manor House',
-          style: 'Countryside Classical Villa',
-          era: 'Built 1848',
-          desc: 'Tucked along the quiet northwestern lane, this peaceful stone manor is framed by cypress trees and blooming window boxes—a serene retreat from the bustle of the square.',
-          features: [
-            'Sun-baked sandstone walls with olive-green timber shutters',
-            'Classic terracotta pitched roof with stone chimney',
-            'Private garden edge framed by vintage fencing'
-          ],
-          x: -22.0, z: -26.5, rotY: 0,
-          size: { w: 9.2, h: 7.8, d: 6.8 }, floors: 2,
-          wallColor: '#d9c3a3', trimColor: '#efe5d3', shutterColor: '#56694a',
-          roofType: 'pitched', roofColor: 'terracotta', hasQuoins: true, hasFlowerBoxes: true, hasSmoke: true
-        },
-        {
-          id: 'inn',
-          name: 'Auberge du Soleil',
-          category: 'Historic Neighborhood Inn',
-          style: 'Half-Timbered Colombage',
-          era: 'Est. 1796',
-          desc: 'The oldest surviving structure in Vieux Quartier. Its exposed dark-oak timber framing and warm golden plaster have welcomed merchants, musicians, and travelers for more than two centuries.',
-          features: [
-            'Authentic dark-oak half-timbered (colombage) upper story',
-            'Deep pitched terracotta roof with glowing hearth chimney',
-            'Warm lantern-lit entrance facing the eastern lane'
-          ],
-          x: 22.0, z: -26.5, rotY: 0,
-          size: { w: 8.8, h: 8.2, d: 6.8 }, floors: 2,
-          wallColor: '#e3bd84', trimColor: '#f2e3c7', shutterColor: '#6b3a2e',
-          roofType: 'pitched', roofColor: 'terracotta', halfTimber: true,
-          signText: 'AUBERGE DU SOLEIL', signSub: 'Depuis 1796',
-          isShop: true, doorOffset: 0, hasFlowerBoxes: true, hasSmoke: true
-        },
-        {
-          id: 'athenaeum',
-          name: 'The Grand Athenaeum',
-          category: 'Your Library',
-          style: 'Victorian Library in the Old Quarter',
-          era: 'The way home',
-          desc: 'The familiar library stands at the end of this cobbled approach. Click the building to return through its carved door.',
-          features: [
-            'A clear stone path connects the entrance to the town avenue',
-            'The same warm mahogany, brass, and parchment palette as the library',
-            'Click this building to return to the Athenaeum'
-          ],
-          x: -37, z: 0, rotY: Math.PI / 2,
-          size: { w: 10, h: 10.4, d: 8.4 }, floors: 3,
-          wallColor: '#e4d4b4', trimColor: '#f6e9d1', shutterColor: '#453122',
-          shopfrontColor: '#493021', roofType: 'mansard',
-          signText: 'ATHENAEUM', signSub: 'Books & Stories',
-          isShop: true, doorOffset: 0, hasQuoins: true, hasBalcony: true, hasFlowerBoxes: true
-        }
-      ];
-
-      buildings.forEach((b) => createVintageBuilding(b));
-    }
-
-    /* =========================================================================
-       8. STREET LAMPS, TREES, BENCHES, CAFÉ TABLES & ENVIRONMENTAL PROPS
-       ========================================================================= */
-    function createStreetLamp(x, z) {
-      const lamp = new THREE.Group();
-      lamp.position.set(x, 0.2, z);
-
-      // Ornate cast-iron post
-      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 0.7, 8), wroughtIronMat);
-      base.position.y = 0.35;
-      base.castShadow = true;
-      lamp.add(base);
-
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.11, 3.6, 8), wroughtIronMat);
-      pole.position.y = 2.4;
-      pole.castShadow = true;
-      lamp.add(pole);
-
-      // Lantern housing
-      const bulbMat = new THREE.MeshStandardMaterial({
-        color: '#fff4d2',
-        emissive: new THREE.Color('#ffaa42'),
-        emissiveIntensity: 1.8,
-        roughness: 0.2
-      });
-      const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.16, 0.48, 6), bulbMat);
-      lantern.position.y = 4.35;
-      lamp.add(lantern);
-      streetLampBulbs.push(bulbMat);
-
-      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.28, 6), wroughtIronMat);
-      cap.position.y = 4.72;
-      lamp.add(cap);
-
-      // Warm point light (selective count for 60fps performance)
-      const light = new THREE.PointLight('#ffaa4c', LIGHTING_PRESETS.golden.lampIntensity, 15, 1.8);
-      light.position.y = 4.25;
-      lamp.add(light);
-      streetLampLights.push({
-        light,
-        phase: Math.random() * Math.PI * 2,
-        speed: 2.2 + Math.random() * 1.8
-      });
-
-      scene.add(lamp);
-    }
-
-    function createBench(x, z, rotY) {
-      const bench = new THREE.Group();
-      bench.position.set(x, 0.22, z);
-      bench.rotation.y = rotY;
-
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 0.62), darkWoodMat);
-      seat.position.y = 0.52;
-      seat.castShadow = true;
-      bench.add(seat);
-
-      const back = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.48, 0.08), darkWoodMat);
-      back.position.set(0, 0.88, -0.26);
-      back.rotation.x = -0.15;
-      back.castShadow = true;
-      bench.add(back);
-
-      [-0.85, 0.85].forEach((lx) => {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.52, 0.56), wroughtIronMat);
-        leg.position.set(lx, 0.26, 0);
-        bench.add(leg);
-      });
-
-      scene.add(bench);
-    }
-
-    function createCafeTableSet(x, z) {
-      const set = new THREE.Group();
-      set.position.set(x, 0.22, z);
-
-      // Marble-top bistro table
-      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.78, 8), wroughtIronMat);
-      stand.position.y = 0.39;
-      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.34, 0.05, 10), wroughtIronMat);
-      foot.position.y = 0.025;
-      const top = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.55, 0.55, 0.06, 16),
-        new THREE.MeshStandardMaterial({ color: '#f2eadc', roughness: 0.35 })
-      );
-      top.position.y = 0.8;
-      top.castShadow = true;
-      set.add(stand, foot, top);
-
-      // Two tiny coffee cups
-      const cupMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.2 });
-      const cup1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.08, 8), cupMat);
-      cup1.position.set(0.16, 0.87, 0.1);
-      const cup2 = cup1.clone();
-      cup2.position.set(-0.18, 0.87, -0.12);
-      set.add(cup1, cup2);
-
-      // Two bistro chairs
-      [-0.85, 0.85].forEach((cx) => {
-        const chair = new THREE.Group();
-        chair.position.set(cx, 0, 0);
-        chair.rotation.y = cx < 0 ? Math.PI / 2 : -Math.PI / 2;
-        const cSeat = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 10), darkWoodMat);
-        cSeat.position.y = 0.46;
-        const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.16, 0.46, 6), wroughtIronMat);
-        cLeg.position.y = 0.23;
-        const cBack = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 6, 12), wroughtIronMat);
-        cBack.position.set(0, 0.76, -0.2);
-        chair.add(cSeat, cLeg, cBack);
-        set.add(chair);
-      });
-
-      scene.add(set);
-    }
-
-    function createVintageTree(x, z, type = 'linden', scale = 1.0) {
-      const tree = new THREE.Group();
-      tree.position.set(x, 0.18, z);
-
-      const trunkMat = new THREE.MeshStandardMaterial({ color: '#5c4635', roughness: 0.94 });
-      const canopyGroup = new THREE.Group();
-
-      if (type === 'cypress') {
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 1.4, 7), trunkMat);
-        trunk.position.y = 0.7;
-        trunk.castShadow = true;
-        tree.add(trunk);
-
-        const cMat = new THREE.MeshStandardMaterial({ color: '#475e42', roughness: 0.92 });
-        const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.95, 4.8, 9), cMat);
-        cone1.position.y = 3.5;
-        cone1.castShadow = true;
-        const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.2, 9), cMat);
-        cone2.position.y = 5.1;
-        cone2.castShadow = true;
-        canopyGroup.add(cone1, cone2);
-      } else {
-        // Multi-layered lush European Linden / Plane tree
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.34, 2.7, 8), trunkMat);
-        trunk.position.y = 1.35;
-        trunk.castShadow = true;
-        tree.add(trunk);
-
-        const foliageColors = ['#586f47', '#6a7f4e', '#4f653f', '#7d8a50'];
-        const blobs = [
-          { x: 0, y: 3.6, z: 0, r: 1.85 },
-          { x: 1.05, y: 3.1, z: 0.5, r: 1.35 },
-          { x: -1.0, y: 3.2, z: -0.45, r: 1.4 },
-          { x: 0.2, y: 4.5, z: -0.3, r: 1.35 },
-          { x: -0.4, y: 3.0, z: 0.95, r: 1.25 }
-        ];
-        blobs.forEach((b, idx) => {
-          const mat = new THREE.MeshStandardMaterial({
-            color: foliageColors[idx % foliageColors.length],
-            roughness: 0.9
-          });
-          const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(b.r, 1), mat);
-          mesh.position.set(b.x, b.y, b.z);
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          canopyGroup.add(mesh);
-        });
-      }
-
-      tree.add(canopyGroup);
-      tree.scale.setScalar(scale);
-      scene.add(tree);
-
-      swayingTrees.push({
-        canopy: canopyGroup,
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.9 + Math.random() * 0.5
-      });
-    }
-
-    function createFlowerPot(x, z) {
-      const potGroup = new THREE.Group();
-      potGroup.position.set(x, 0.22, z);
-      const terraMat = new THREE.MeshStandardMaterial({ color: '#b36143', roughness: 0.85 });
-      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.22, 0.45, 10), terraMat);
-      pot.position.y = 0.225;
-      pot.castShadow = true;
-      const bush = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(0.35, 0),
-        new THREE.MeshStandardMaterial({ color: '#4d6f44', roughness: 0.9 })
-      );
-      bush.position.y = 0.56;
-      const bloom = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 6, 6),
-        new THREE.MeshStandardMaterial({ color: '#e57266', roughness: 0.7 })
-      );
-      bloom.position.set(0.12, 0.74, 0.08);
-      potGroup.add(pot, bush, bloom);
-      scene.add(potGroup);
-    }
-
-    function buildPropsAndFoliage() {
-      // Street lamps around plaza & avenues
-      const lampPositions = [
-        [-8.2, -8.2], [8.2, -8.2], [-8.2, 8.2], [8.2, 8.2],
-        [-7.5, -22], [7.5, -22], [-7.5, 22], [7.5, 22],
-        [-22, -7.5], [22, -7.5], [-22, 7.5], [22, 7.5]
-      ];
-      lampPositions.forEach(([x, z]) => createStreetLamp(x, z));
-
-      // Plaza benches facing the fountain
-      createBench(-5.8, -5.8, Math.PI * 0.25);
-      createBench(5.8, -5.8, -Math.PI * 0.25);
-      createBench(-5.8, 5.8, Math.PI * 0.75);
-      createBench(5.8, 5.8, -Math.PI * 0.75);
-
-      // Café outdoor terrace tables
-      createCafeTableSet(10.2, -10.8);
-      createCafeTableSet(12.2, -8.8);
-      createCafeTableSet(14.5, -9.8);
-
-      // Potted flowers outside Florist & Bakery
-      createFlowerPot(-11.2, 11.2);
-      createFlowerPot(-12.6, 9.8);
-      createFlowerPot(-10.8, -11.4);
-      createFlowerPot(11.4, 11.2);
-
-      // Trees throughout sidewalks and town outskirts
-      const treeSpecs = [
-        [-10.5, -21, 'linden', 1.05], [10.5, -21, 'linden', 0.95],
-        [-10.5, 21, 'linden', 1.0], [10.5, 21, 'linden', 1.1],
-        [-31, -10, 'linden', 1.2], [31, -10, 'linden', 1.15],
-        [-31, 10, 'linden', 1.1], [31, 10, 'linden', 1.25],
-        [-15.5, -26, 'cypress', 1.15], [-28.5, -26, 'cypress', 1.05],
-        [15.5, -26, 'cypress', 1.1], [28.5, -26, 'cypress', 1.2],
-        [-29, 25, 'linden', 1.3], [29, 25, 'linden', 1.25],
-        [-16, 29, 'cypress', 1.1], [16, 29, 'cypress', 1.15],
-        [0, -35, 'linden', 1.4], [-38, -22, 'linden', 1.35],
-        [38, -20, 'linden', 1.35], [-38, 22, 'linden', 1.3]
-      ];
-      treeSpecs.forEach(([x, z, type, scale]) => createVintageTree(x, z, type, scale));
-
-      // Vintage Iron Fence along the Manor garden
-      const fenceGroup = new THREE.Group();
-      for (let fx = -27.5; fx <= -16.5; fx += 0.65) {
-        const picket = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.05, 6), wroughtIronMat);
-        picket.position.set(fx, 0.72, -21.8);
-        fenceGroup.add(picket);
-      }
-      const fenceRail = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.07, 0.07), wroughtIronMat);
-      fenceRail.position.set(-22, 1.08, -21.8);
-      fenceGroup.add(fenceRail);
-      scene.add(fenceGroup);
-    }
-
-    /* =========================================================================
-       9. ARTICULATED EVERYDAY PEDESTRIANS & NATURAL BEHAVIORS
-       ========================================================================= */
-    const pedestrians = [];
+    // Multiplayer remote players
     const remotePlayers = new Map();
-
-    function createPedestrianModel(style) {
-      const root = new THREE.Group();
-
-      const skinMat = new THREE.MeshStandardMaterial({ color: style.skin, roughness: 0.8 });
-      const coatMat = new THREE.MeshStandardMaterial({ color: style.coat, roughness: 0.88 });
-      const pantsMat = new THREE.MeshStandardMaterial({ color: style.pants, roughness: 0.9 });
-      const hatMat = new THREE.MeshStandardMaterial({ color: style.hatColor, roughness: 0.85 });
-
-      const bodyPivot = new THREE.Group();
-      root.add(bodyPivot);
-
-      // Torso / Vintage Coat
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.21, style.skirt ? 0.34 : 0.24, 0.78, 8), coatMat);
-      torso.position.y = 1.05;
-      torso.castShadow = true;
-      bodyPivot.add(torso);
-
-      // Head
-      const headGroup = new THREE.Group();
-      headGroup.position.y = 1.62;
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 10), skinMat);
-      head.castShadow = true;
-      headGroup.add(head);
-
-      // Vintage Hat (Beret, Fedora, or Cloche)
-      if (style.hatType === 'fedora') {
-        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.03, 12), hatMat);
-        brim.position.y = 0.11;
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.14, 10), hatMat);
-        crown.position.y = 0.18;
-        headGroup.add(brim, crown);
-      } else if (style.hatType === 'beret') {
-        const beret = new THREE.Mesh(new THREE.SphereGeometry(0.19, 10, 6), hatMat);
-        beret.scale.set(1.1, 0.45, 1.1);
-        beret.position.set(0.03, 0.15, 0);
-        headGroup.add(beret);
-      } else {
-        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), hatMat);
-        hair.position.set(0, 0.05, -0.02);
-        headGroup.add(hair);
-      }
-      bodyPivot.add(headGroup);
-
-      // Articulated Arms
-      const armGeo = new THREE.CylinderGeometry(0.055, 0.048, 0.58, 7);
-      armGeo.translate(0, -0.26, 0);
-
-      const leftArm = new THREE.Mesh(armGeo, coatMat);
-      leftArm.position.set(-0.26, 1.38, 0);
-      leftArm.castShadow = true;
-      bodyPivot.add(leftArm);
-
-      const rightArm = new THREE.Mesh(armGeo, coatMat);
-      rightArm.position.set(0.26, 1.38, 0);
-      rightArm.castShadow = true;
-      bodyPivot.add(rightArm);
-
-      // Articulated Legs
-      const legGeo = new THREE.CylinderGeometry(0.072, 0.06, 0.68, 7);
-      legGeo.translate(0, -0.34, 0);
-
-      const leftLeg = new THREE.Mesh(legGeo, pantsMat);
-      leftLeg.position.set(-0.11, 0.7, 0);
-      leftLeg.castShadow = true;
-      bodyPivot.add(leftLeg);
-
-      const rightLeg = new THREE.Mesh(legGeo, pantsMat);
-      rightLeg.position.set(0.11, 0.7, 0);
-      rightLeg.castShadow = true;
-      bodyPivot.add(rightLeg);
-
-      return { root, bodyPivot, headGroup, leftArm, rightArm, leftLeg, rightLeg };
-    }
-
-    const PLAYER_COAT_COLORS = ['#597957', '#785a86', '#9a5a43', '#4b7281', '#a17b3c', '#5d6b9b', '#826a5a', '#557c72'];
-
-    function multiplayerColor(playerId) {
-      let hash = 0;
-      for (let index = 0; index < playerId.length; index += 1) hash = (hash * 31 + playerId.charCodeAt(index)) | 0;
-      return PLAYER_COAT_COLORS[((hash % PLAYER_COAT_COLORS.length) + PLAYER_COAT_COLORS.length) % PLAYER_COAT_COLORS.length];
-    }
-
-    function createPlayerNameplate(name) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 384;
-      canvas.height = 96;
-      const context = canvas.getContext('2d');
-      context.fillStyle = 'rgba(30, 20, 13, 0.88)';
-      context.beginPath();
-      context.roundRect(6, 6, 372, 84, 22);
-      context.fill();
-      context.strokeStyle = 'rgba(229, 189, 113, 0.9)';
-      context.lineWidth = 4;
-      context.stroke();
-      context.fillStyle = '#fff0cf';
-      context.font = 'bold 39px Georgia, serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(name.slice(0, 24), 192, 48, 340);
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      const plate = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
-      plate.scale.set(1.9, 0.48, 1);
-      plate.position.set(0, 2.32, 0);
-      plate.renderOrder = 5;
-      plate.userData.name = name;
-      return plate;
-    }
-
     function setMultiplayerPlayers(players) {
-      const activeIds = new Set(players.map((player) => player.id));
-      for (const [id, player] of remotePlayers) {
-        if (activeIds.has(id)) continue;
-        scene.remove(player.rig.root);
-        player.rig.root.traverse((object) => {
-          object.geometry?.dispose();
-          if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
-          else object.material?.dispose();
-          object.material?.map?.dispose();
-        });
-        remotePlayers.delete(id);
+      const activeIds = new Set(players.map((p) => p.id));
+      for (const [id, r] of remotePlayers) {
+        if (!activeIds.has(id)) { scene.remove(r.rig.root); remotePlayers.delete(id); }
       }
-
-      players.forEach((player) => {
-        let remote = remotePlayers.get(player.id);
+      players.forEach((p) => {
+        let remote = remotePlayers.get(p.id);
         if (!remote) {
-          const rig = createPedestrianModel({
-            skin: '#d7ad8d',
-            coat: multiplayerColor(player.id),
-            pants: '#342c28',
-            hatColor: '#473326',
-            hatType: 'fedora',
-            skirt: false,
-          });
-          const nameplate = createPlayerNameplate(player.name);
-          rig.root.add(nameplate);
+          const rig = createHumanModel({ coat: '#26a69a', sunglasses: true }, world.contactShadowTex);
+          rig.root.add(createNameplate(p.name, '#ff4ec7'));
           scene.add(rig.root);
-          remote = {
-            rig,
-            target: new THREE.Vector3(),
-            yaw: 0,
-            walking: false,
-            phase: 0,
-            waveUntil: 0,
-          };
-          remotePlayers.set(player.id, remote);
+          remote = { rig, target: new THREE.Vector3(), yaw: 0, walking: false, phase: 0, waveUntil: 0 };
+          remotePlayers.set(p.id, remote);
         }
-        const nameplate = remote.rig.root.children.find((child) => child.isSprite);
-        if (nameplate?.userData.name !== player.name) {
-          if (nameplate) {
-            remote.rig.root.remove(nameplate);
-            nameplate.material.map?.dispose();
-            nameplate.material.dispose();
-          }
-          remote.rig.root.add(createPlayerNameplate(player.name));
-        }
-        remote.target.set(player.pose?.x ?? 0, 0.22, player.pose?.z ?? 0);
-        remote.yaw = player.pose?.yaw ?? 0;
-        remote.walking = Boolean(player.pose?.moving);
+        remote.target.set(p.pose?.x ?? 0, 0.14, p.pose?.z ?? 0);
+        remote.yaw = p.pose?.yaw ?? 0;
+        remote.walking = Boolean(p.pose?.moving);
       });
     }
 
-    function animatePlayerAction(action) {
-      if (action?.action !== 'wave') return;
-      const player = remotePlayers.get(action.fromId);
-      if (player) player.waveUntil = performance.now() + 1300;
-    }
+    // Story Dialogue & Cipher Modals
+    function openDialogue(lines, onDone) {
+      const overlay = document.getElementById('dialogue-overlay');
+      const spk = document.getElementById('dlg-speaker');
+      const role = document.getElementById('dlg-role');
+      const txt = document.getElementById('dlg-text');
+      const choicesEl = document.getElementById('dlg-choices');
+      let idx = 0;
 
-    function updateRemotePlayers(dt, elapsed) {
-      for (const remote of remotePlayers.values()) {
-        const { rig } = remote;
-        rig.root.position.lerp(remote.target, 1 - Math.exp(-10 * dt));
-        let yawDelta = remote.yaw - rig.root.rotation.y;
-        yawDelta = Math.atan2(Math.sin(yawDelta), Math.cos(yawDelta));
-        rig.root.rotation.y += yawDelta * (1 - Math.exp(-10 * dt));
-        if (remote.walking) {
-          remote.phase += dt * 8;
-          rig.leftLeg.rotation.x = Math.sin(remote.phase) * 0.34;
-          rig.rightLeg.rotation.x = -Math.sin(remote.phase) * 0.34;
-          rig.leftArm.rotation.x = -Math.sin(remote.phase) * 0.22;
+      function renderLine() {
+        const line = lines[idx];
+        if (!line) {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+          onDone();
+          return;
+        }
+        spk.textContent = line.speaker;
+        role.textContent = line.role || '';
+        txt.textContent = line.text;
+        choicesEl.innerHTML = '';
+
+        if (line.choices) {
+          line.choices.forEach((ch) => {
+            const btn = document.createElement('button');
+            btn.className = 'px-4 py-2 rounded-xl bg-cyan-500/25 hover:bg-cyan-500/40 border border-cyan-300/45 text-xs font-semibold text-white transition';
+            btn.textContent = ch.label;
+            btn.onclick = () => {
+              txt.textContent = ch.reply;
+              choicesEl.innerHTML = '';
+              const nextBtn = document.createElement('button');
+              nextBtn.className = 'px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold';
+              nextBtn.textContent = 'Continue →';
+              nextBtn.onclick = () => { idx += 1; renderLine(); };
+              choicesEl.appendChild(nextBtn);
+            };
+            choicesEl.appendChild(btn);
+          });
         } else {
-          rig.leftLeg.rotation.x *= 0.8;
-          rig.rightLeg.rotation.x *= 0.8;
-          rig.leftArm.rotation.x *= 0.8;
+          const nextBtn = document.createElement('button');
+          nextBtn.className = 'px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold';
+          nextBtn.textContent = idx + 1 < lines.length ? 'Next →' : 'Accept Objective ✓';
+          nextBtn.onclick = () => { idx += 1; renderLine(); };
+          choicesEl.appendChild(nextBtn);
         }
-        rig.rightArm.rotation.z = performance.now() < remote.waveUntil ? -0.9 + Math.sin(elapsed * 23) * 0.45 : rig.rightArm.rotation.z * 0.78;
+      }
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      renderLine();
+    }
+
+    function openCipherModal(step, onResult) {
+      const modal = document.getElementById('cipher-modal');
+      document.getElementById('cipher-hint').textContent = step.hint;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('btn-cipher-cancel').onclick = () => {
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+        playerPosition.x -= 4;
+        onResult(false);
+      };
+      document.getElementById('btn-cipher-unlock').onclick = () => {
+        const guess = ['dial-0', 'dial-1', 'dial-2'].map((id) => document.getElementById(id).value.trim()).join('');
+        if (guess === step.code) {
+          modal.classList.add('hidden'); modal.classList.remove('flex');
+          showToast('Sovereign Codex Recovered! 3-Star Escape Active!');
+          onResult(true);
+        } else {
+          showToast('Incorrect cipher! Hint: 1 - 8 - 4');
+        }
+      };
+    }
+
+    // Vehicle Enter / Exit / Physics
+    function getNearestCar(maxDist = 4.5) {
+      let best = null; let bestD = maxDist;
+      for (const c of drivableCars) {
+        const d = Math.hypot(playerPosition.x - c.root.position.x, playerPosition.z - c.root.position.z);
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      return best;
+    }
+
+    function enterCar(car) {
+      if (!car) return;
+      state.cameraTransition = null;
+      state.activeCar = car;
+      playerVelocity.set(0, 0, 0);
+      carAudio.startEngine();
+      car.driverSeatAnchor.add(localPlayerRig.root);
+      localPlayerRig.root.position.set(0, 0, 0);
+      localPlayerRig.root.rotation.set(0, 0, 0);
+      localPlayerRig.root.visible = true;
+      poseHumanDriving(localPlayerRig, 0);
+      cameraYaw = car.yaw + Math.PI;
+      cameraPitch = -0.14;
+      document.getElementById('car-hud').classList.remove('hidden');
+      document.getElementById('car-hud-name').textContent = car.name;
+      document.getElementById('btn-drive-label').textContent = 'Exit Car';
+      document.getElementById('btn-car-siren').classList.toggle('hidden', car.style !== 'police');
+      document.getElementById('mobile-walk-pad').classList.add('hidden');
+      document.getElementById('mobile-drive-pad').classList.remove('hidden');
+      document.getElementById('mobile-drive-pad').classList.add('flex');
+      updateCameraModeLabel();
+    }
+
+    function exitCar() {
+      const car = state.activeCar;
+      if (!car) return;
+      car.speed = 0; car.sirenOn = false;
+      carAudio.stopEngine();
+      const side = new THREE.Vector3(-1.8, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), car.yaw);
+      playerPosition.set(
+        THREE.MathUtils.clamp(car.root.position.x + side.x, -68, 52),
+        0,
+        THREE.MathUtils.clamp(car.root.position.z + side.z, -68, 68)
+      );
+      scene.add(localPlayerRig.root);
+      localPlayerRig.root.position.set(playerPosition.x, 0.05, playerPosition.z);
+      localPlayerRig.root.visible = state.cameraMode === 'third';
+      state.activeCar = null;
+      cameraPitch = 0;
+      document.getElementById('car-hud').classList.add('hidden');
+      document.getElementById('btn-drive-label').textContent = 'Drive Car';
+      document.getElementById('mobile-walk-pad').classList.remove('hidden');
+      document.getElementById('mobile-drive-pad').classList.add('hidden');
+      document.getElementById('mobile-drive-pad').classList.remove('flex');
+      updateCameraModeLabel();
+    }
+
+    function canCarMoveTo(x, z) {
+      const r = 1.15;
+      if (x < -70 + r || x > 56 - r || z < -70 + r || z > 70 - r) return false;
+      if (world.walkObstacles.some((o) => x + r > o.minX && x - r < o.maxX && z + r > o.minZ && z - r < o.maxZ)) return false;
+      return !world.carObstacles.some((o) => x + r > o.minX && x - r < o.maxX && z + r > o.minZ && z - r < o.maxZ);
+    }
+
+    function updateCarPhysics(dt, elapsed) {
+      const car = state.activeCar;
+      if (!car) return;
+      const throttle = Number(state.keys.w || state.keys.arrowup || state.touchMoves.has('forward')) - Number(state.keys.s || state.keys.arrowdown || state.touchMoves.has('backward'));
+      const steerInput = Number(state.keys.a || state.keys.arrowleft || state.touchMoves.has('left')) - Number(state.keys.d || state.keys.arrowright || state.touchMoves.has('right'));
+      const handbrake = Boolean(state.keys[' ']);
+      const boosting = Boolean(state.keys.shift) && throttle > 0 && car.nitro > 2;
+
+      if (boosting) car.nitro = Math.max(0, car.nitro - 28 * dt);
+      else car.nitro = Math.min(100, car.nitro + 12 * dt);
+
+      car.flameMat.opacity = boosting ? 0.85 : 0;
+      car.nitroFlames.forEach((f) => { f.scale.y = 0.7 + Math.sin(elapsed * 45) * 0.35; });
+
+      const topSpeed = boosting ? car.maxSpeed * 1.28 : car.maxSpeed;
+      if (handbrake) car.speed *= Math.exp(-4.8 * dt);
+      else if (throttle > 0) car.speed = Math.min(topSpeed, car.speed + (boosting ? 24 : 15) * dt);
+      else if (throttle < 0) car.speed = car.speed > 0.6 ? Math.max(0, car.speed - 24 * dt) : Math.max(-10, car.speed - 10 * dt);
+      else { car.speed *= Math.exp(-1.5 * dt); if (Math.abs(car.speed) < 0.05) car.speed = 0; }
+
+      car.steerAngle += (steerInput * 0.54 - car.steerAngle) * Math.min(1, dt * 8.5);
+      car.frontSteerPivots.forEach((p) => { p.rotation.y = car.steerAngle; });
+      car.steeringWheelGroup.rotation.z = -car.steerAngle * 2.1;
+
+      const speedFactor = Math.min(1, Math.abs(car.speed) / 3.5);
+      const turnDir = car.speed >= 0 ? 1 : -1;
+      car.yaw += car.steerAngle * (handbrake ? 3.1 : 2.35) * speedFactor * turnDir * dt;
+      car.root.rotation.y = car.yaw;
+
+      const vx = Math.sin(car.yaw) * car.speed;
+      const vz = Math.cos(car.yaw) * car.speed;
+      const nx = car.root.position.x + vx * dt;
+      const nz = car.root.position.z + vz * dt;
+      if (canCarMoveTo(nx, car.root.position.z)) car.root.position.x = nx; else car.speed *= -0.25;
+      if (canCarMoveTo(car.root.position.x, nz)) car.root.position.z = nz; else car.speed *= -0.25;
+
+      if ((handbrake || Math.abs(car.steerAngle) > 0.38) && Math.abs(car.speed) > 9 && Math.random() < 0.45) {
+        spawnTireSmoke(car.root.position.x - Math.sin(car.yaw) * 1.4, car.root.position.z - Math.cos(car.yaw) * 1.4);
+      }
+
+      car.wheels.forEach((w) => { w.rotation.x += (car.speed * dt) / car.wheelRadius; });
+      car.chassisPivot.rotation.z = THREE.MathUtils.lerp(car.chassisPivot.rotation.z, -car.steerAngle * speedFactor * 0.09, 0.14);
+      car.chassisPivot.rotation.x = THREE.MathUtils.lerp(car.chassisPivot.rotation.x, (throttle < 0 || handbrake ? 0.028 : -throttle * 0.02), 0.12);
+      car.taillightMat.emissiveIntensity = (throttle < 0 || handbrake) ? 2.6 : 0.85;
+
+      if (car.sirenRedMat && car.sirenBlueMat) {
+        const flash = car.sirenOn ? Math.sin(elapsed * 16) > 0 : false;
+        car.sirenRedMat.emissiveIntensity = car.sirenOn ? (flash ? 3.5 : 0.2) : 0.4;
+        car.sirenBlueMat.emissiveIntensity = car.sirenOn ? (!flash ? 3.5 : 0.2) : 0.4;
+      }
+
+      poseHumanDriving(localPlayerRig, car.steerAngle);
+      carAudio.updateEngine(Math.abs(car.speed), true, boosting, car.sirenOn || story.wantedStars > 0, elapsed);
+      playerPosition.set(car.root.position.x, 0, car.root.position.z);
+
+      document.getElementById('car-speed').textContent = String(Math.round(Math.abs(car.speed) * 3.6));
+      document.getElementById('car-gear').textContent = Math.abs(car.speed) < 0.2 ? 'N' : (car.speed > 0 ? 'D' : 'R');
+      document.getElementById('nitro-bar').style.width = `${Math.round(car.nitro)}%`;
+      document.getElementById('nitro-pct').textContent = `${Math.round(car.nitro)}%`;
+
+      // Dynamic FOV surge on nitro
+      const targetFov = boosting ? 64 : 52;
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 6);
+      camera.updateProjectionMatrix();
+
+      if (!state.isDragging && state.carCameraMode === 'chase') {
+        let diff = (car.yaw + Math.PI) - cameraYaw;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        cameraYaw += diff * Math.min(1, dt * 3.8);
+        cameraPitch += (-0.15 - cameraPitch) * Math.min(1, dt * 3.5);
+      }
+
+      if (state.carCameraMode === 'hood') {
+        const hOff = new THREE.Vector3(-0.36, 1.32, -0.15).applyAxisAngle(new THREE.Vector3(0, 1, 0), car.yaw);
+        camera.position.copy(car.root.position).add(hOff);
+        if (!state.isDragging) { cameraYaw = car.yaw + Math.PI; cameraPitch = -0.04; }
+        controls.update();
+      } else {
+        const dist = state.carCameraMode === 'orbit' ? 7.8 : 6.4;
+        const focus = new THREE.Vector3(car.root.position.x, 1.25, car.root.position.z);
+        const cx = THREE.MathUtils.clamp(focus.x + Math.sin(cameraYaw) * Math.cos(cameraPitch) * dist, -70, 62);
+        const cz = THREE.MathUtils.clamp(focus.z + Math.cos(cameraYaw) * Math.cos(cameraPitch) * dist, -70, 70);
+        const cy = Math.max(0.85, focus.y - Math.sin(cameraPitch) * dist + 1.3);
+        camera.position.lerp(new THREE.Vector3(cx, cy, cz), 1 - Math.exp(-9 * dt));
+        camera.lookAt(focus);
+        controls.target.copy(focus);
       }
     }
 
-    function populatePedestrians() {
-      const coatColors = ['#6b4c3b', '#4d5d53', '#7a3f3a', '#8c7456', '#3d4a5c', '#9e896e', '#594a47', '#6c7352'];
-      const pantsColors = ['#3b342e', '#46413b', '#2f353d', '#57493d'];
-      const skinColors = ['#ecc4a6', '#d8a986', '#f2cfb5', '#c5926f'];
-      const hatTypes = ['fedora', 'beret', 'hair'];
-
-      // Connected sidewalk & crosswalk patrol routes
-      const routes = [
-        // Central Plaza Promenade Loop
-        [
-          new THREE.Vector3(-8.6, 0.22, -8.6),
-          new THREE.Vector3(8.6, 0.22, -8.6),
-          new THREE.Vector3(8.6, 0.22, 8.6),
-          new THREE.Vector3(-8.6, 0.22, 8.6)
-        ],
-        // North Avenue & Crosswalk Loop
-        [
-          new THREE.Vector3(-27, 0.22, -8.5),
-          new THREE.Vector3(-8.5, 0.22, -8.5),
-          new THREE.Vector3(-8.5, 0.22, -21),
-          new THREE.Vector3(8.5, 0.22, -21),
-          new THREE.Vector3(8.5, 0.22, -8.5),
-          new THREE.Vector3(27, 0.22, -8.5),
-          new THREE.Vector3(27, 0.22, 8.5),
-          new THREE.Vector3(8.5, 0.22, 8.5),
-          new THREE.Vector3(-8.5, 0.22, 8.5),
-          new THREE.Vector3(-27, 0.22, 8.5)
-        ],
-        // South & East Shopfront Stroll
-        [
-          new THREE.Vector3(-8.2, 0.22, 24),
-          new THREE.Vector3(-8.2, 0.22, 8.8),
-          new THREE.Vector3(8.2, 0.22, 8.8),
-          new THREE.Vector3(8.2, 0.22, 24)
-        ],
-        // West Bakery & Bookstore Crosswalk Route
-        [
-          new THREE.Vector3(-19, 0.22, -9.2),
-          new THREE.Vector3(-11, 0.22, -9.2),
-          new THREE.Vector3(-11, 0.22, 9.2),
-          new THREE.Vector3(-19, 0.22, 9.2)
-        ]
-      ];
-
-      // 12 Walking Pedestrians
-      for (let i = 0; i < 12; i++) {
-        const route = routes[i % routes.length];
-        const startIdx = i % route.length;
-        const style = {
-          coat: coatColors[i % coatColors.length],
-          pants: pantsColors[i % pantsColors.length],
-          skin: skinColors[i % skinColors.length],
-          hatColor: coatColors[(i + 3) % coatColors.length],
-          hatType: hatTypes[i % hatTypes.length],
-          skirt: i % 3 === 1
-        };
-
-        const rig = createPedestrianModel(style);
-        const startPos = route[startIdx].clone();
-        // Slight lane offset so walkers don't overlap
-        startPos.x += (Math.random() - 0.5) * 1.1;
-        startPos.z += (Math.random() - 0.5) * 1.1;
-        rig.root.position.copy(startPos);
-        scene.add(rig.root);
-
-        pedestrians.push({
-          type: 'walker',
-          rig,
-          route,
-          targetIdx: (startIdx + 1) % route.length,
-          speed: 1.35 + Math.random() * 0.75,
-          walkCycle: Math.random() * Math.PI * 2,
-          pauseTimer: 0
-        });
-      }
-
-      // 4 Conversing Townspeople (2 pairs near Café & Plaza Fountain)
-      const pairs = [
-        { posA: new THREE.Vector3(8.5, 0.22, -10.8), posB: new THREE.Vector3(9.6, 0.22, -10.2) },
-        { posA: new THREE.Vector3(-4.8, 0.22, 3.8), posB: new THREE.Vector3(-3.8, 0.22, 4.4) }
-      ];
-
-      pairs.forEach((pair, pIdx) => {
-        [pair.posA, pair.posB].forEach((pos, idx) => {
-          const other = idx === 0 ? pair.posB : pair.posA;
-          const rig = createPedestrianModel({
-            coat: coatColors[(pIdx * 2 + idx + 2) % coatColors.length],
-            pants: pantsColors[(pIdx + idx) % pantsColors.length],
-            skin: skinColors[(pIdx + idx) % skinColors.length],
-            hatColor: '#3a2d24',
-            hatType: idx === 0 ? 'beret' : 'fedora',
-            skirt: idx === 1
-          });
-          rig.root.position.copy(pos);
-          rig.root.lookAt(other.x, pos.y, other.z);
-          scene.add(rig.root);
-
-          pedestrians.push({
-            type: 'conversing',
-            rig,
-            phase: Math.random() * Math.PI * 2
-          });
-        });
-      });
+    function canWalkTo(x, z) {
+      const r = 0.28;
+      if (x < -70 + r || x > 62 - r || z < -70 + r || z > 70 - r) return false;
+      return !world.walkObstacles.some((o) => x + r > o.minX && x - r < o.maxX && z + r > o.minZ && z - r < o.maxZ);
     }
 
-    /* =========================================================================
-       10. AMBIENT LIFE: CHIMNEY SMOKE & SOARING BIRDS
-       ========================================================================= */
-    const smokeParticles = [];
-    const birds = [];
+    function updateNavigation(dt, elapsed) {
+      if (state.activeCar) { updateCarPhysics(dt, elapsed); return; }
 
-    function initAmbientLife() {
-      // Soft rising smoke puffs from chimneys
-      const smokeGeo = new THREE.SphereGeometry(0.32, 7, 7);
-      chimneySources.forEach((origin) => {
-        for (let i = 0; i < 6; i++) {
-          const mat = new THREE.MeshStandardMaterial({
-            color: '#efe7dc',
-            transparent: true,
-            opacity: 0.35,
-            roughness: 1,
-            depthWrite: false
-          });
-          const puff = new THREE.Mesh(smokeGeo, mat);
-          scene.add(puff);
-          smokeParticles.push({
-            mesh: puff,
-            origin: origin.clone(),
-            age: i / 6,
-            speed: 0.14 + Math.random() * 0.05,
-            driftX: 0.55 + Math.random() * 0.35,
-            driftZ: -0.25 + (Math.random() - 0.5) * 0.3
-          });
-        }
-      });
+      const fwd = Number(state.keys.w || state.keys.arrowup || state.touchMoves.has('forward')) - Number(state.keys.s || state.keys.arrowdown || state.touchMoves.has('backward'));
+      const side = Number(state.keys.d || state.keys.arrowright || state.touchMoves.has('right')) - Number(state.keys.a || state.keys.arrowleft || state.touchMoves.has('left'));
+      const sprinting = Boolean(state.keys.shift);
+      const desired = new THREE.Vector3(side, 0, -fwd);
+      if (desired.lengthSq()) desired.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+      desired.multiplyScalar(sprinting ? 6.2 : 2.9);
+      playerVelocity.lerp(desired, 1 - Math.exp(-12 * dt));
 
-      // Flock of 7 soaring birds circling above the rooftops
-      const birdMat = new THREE.MeshStandardMaterial({ color: '#2b2420', roughness: 0.8, side: THREE.DoubleSide });
-      const wingGeo = new THREE.PlaneGeometry(0.45, 0.18);
-      wingGeo.translate(0.22, 0, 0);
+      const mx = playerVelocity.x * dt;
+      const mz = playerVelocity.z * dt;
+      if (Math.abs(mx) > 0.0001 && canWalkTo(playerPosition.x + mx, playerPosition.z)) playerPosition.x += mx; else playerVelocity.x = 0;
+      if (Math.abs(mz) > 0.0001 && canWalkTo(playerPosition.x, playerPosition.z + mz)) playerPosition.z += mz; else playerVelocity.z = 0;
 
-      for (let i = 0; i < 7; i++) {
-        const bird = new THREE.Group();
-        const leftWing = new THREE.Mesh(wingGeo, birdMat);
-        leftWing.scale.x = -1;
-        const rightWing = new THREE.Mesh(wingGeo, birdMat);
-        bird.add(leftWing, rightWing);
-        scene.add(bird);
+      if (!state.isGrounded || state.playerHeightOffset > 0) {
+        state.playerVerticalVel -= 15.5 * dt;
+        state.playerHeightOffset += state.playerVerticalVel * dt;
+        if (state.playerHeightOffset <= 0) { state.playerHeightOffset = 0; state.playerVerticalVel = 0; state.isGrounded = true; }
+      }
 
-        birds.push({
-          group: bird,
-          leftWing,
-          rightWing,
-          radius: 16 + Math.random() * 14,
-          height: 18 + Math.random() * 7,
-          angle: (i / 7) * Math.PI * 2,
-          speed: 0.22 + Math.random() * 0.12,
-          flapSpeed: 6.5 + Math.random() * 2.5,
-          flapPhase: Math.random() * Math.PI * 2
-        });
+      const spd = Math.hypot(playerVelocity.x, playerVelocity.z);
+      state.movementAmount = Math.min(1.6, spd / 2.9);
+      if (state.movementAmount > 0.04) state.walkCycle += dt * (sprinting ? 14.5 : 10.5);
+      const bob = Math.sin(state.walkCycle) * (sprinting ? 0.036 : 0.024) * Math.min(1.2, state.movementAmount);
+
+      localPlayerRig.root.position.set(playerPosition.x, 0.05 + state.playerHeightOffset, playerPosition.z);
+      if (spd > 0.25) {
+        let yd = Math.atan2(playerVelocity.x, playerVelocity.z) - localPlayerRig.root.rotation.y;
+        yd = Math.atan2(Math.sin(yd), Math.cos(yd));
+        localPlayerRig.root.rotation.y += yd * Math.min(1, dt * 10);
+      } else {
+        localPlayerRig.root.rotation.y = cameraYaw + Math.PI;
+      }
+      poseHumanWalking(localPlayerRig, Math.min(1.25, state.movementAmount), state.walkCycle, elapsed);
+
+      if (state.cameraMode === 'third') {
+        localPlayerRig.root.visible = true;
+        const focus = new THREE.Vector3(playerPosition.x, 1.48 + state.playerHeightOffset, playerPosition.z);
+        const dist = 3.5;
+        camera.position.set(
+          THREE.MathUtils.clamp(focus.x + Math.sin(cameraYaw) * Math.cos(cameraPitch) * dist, -70, 62),
+          Math.max(0.65, focus.y - Math.sin(cameraPitch) * dist + 0.35),
+          THREE.MathUtils.clamp(focus.z + Math.cos(cameraYaw) * Math.cos(cameraPitch) * dist, -70, 70)
+        );
+        camera.lookAt(focus);
+        controls.target.copy(focus);
+      } else {
+        localPlayerRig.root.visible = false;
+        camera.position.set(playerPosition.x, 1.68 + state.playerHeightOffset + bob, playerPosition.z);
+        controls.update();
       }
     }
 
-    /* =========================================================================
-       11. LANDMARK REGISTRY, HOTSPOTS & UI BINDINGS
-       ========================================================================= */
-    const hotspotsLayer = document.getElementById('hotspots-layer');
-    const landmarksListEl = document.getElementById('landmarks-list');
+    // AI Traffic & Police Pursuit
+    function updateTrafficAndPolice(dt, elapsed) {
+      aiTraffic.forEach((ai) => {
+        const tgt = ai.waypoints[ai.targetIdx];
+        const pos = ai.car.root.position;
+        const dx = tgt.x - pos.x; const dz = tgt.z - pos.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 2.2) { ai.targetIdx = (ai.targetIdx + 1) % ai.waypoints.length; return; }
+        const pDist = Math.hypot(playerPosition.x - pos.x, playerPosition.z - pos.z);
+        const spd = pDist < 5.5 ? 0 : ai.baseSpeed;
+        const desiredYaw = Math.atan2(dx, dz);
+        let diff = desiredYaw - ai.car.yaw;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        ai.car.yaw += diff * Math.min(1, dt * 5);
+        ai.car.root.rotation.y = ai.car.yaw;
+        pos.x += Math.sin(ai.car.yaw) * spd * dt;
+        pos.z += Math.cos(ai.car.yaw) * spd * dt;
+        ai.car.wheels.forEach((w) => { w.rotation.x += (spd * dt) / 0.35; });
+      });
 
-    function registerLandmark(data) {
-      // Tag all child meshes for raycasting lookup
-      data.group.traverse((child) => {
-        if (child.isMesh) {
-          child.userData.landmarkId = data.id;
+      policeUnits.forEach((u) => {
+        const flash = story.wantedStars > 0 ? Math.sin(elapsed * 16) > 0 : false;
+        u.car.sirenRedMat.emissiveIntensity = story.wantedStars > 0 ? (flash ? 3.5 : 0.2) : 0.3;
+        u.car.sirenBlueMat.emissiveIntensity = story.wantedStars > 0 ? (!flash ? 3.5 : 0.2) : 0.3;
+        const target = story.wantedStars > 0 ? playerPosition : u.home;
+        const dx = target.x - u.car.root.position.x;
+        const dz = target.z - u.car.root.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > (story.wantedStars > 0 ? 7.5 : 1.5)) {
+          const spd = story.wantedStars > 0 ? 15.5 + story.wantedStars * 2.5 : 6;
+          const desiredYaw = Math.atan2(dx, dz);
+          let diff = desiredYaw - u.car.yaw;
+          diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+          u.car.yaw += diff * Math.min(1, dt * 4.2);
+          u.car.root.rotation.y = u.car.yaw;
+          const nx = u.car.root.position.x + Math.sin(u.car.yaw) * spd * dt;
+          const nz = u.car.root.position.z + Math.cos(u.car.yaw) * spd * dt;
+          if (canCarMoveTo(nx, nz)) { u.car.root.position.set(nx, 0.04, nz); }
+          u.car.wheels.forEach((w) => { w.rotation.x += (spd * dt) / 0.35; });
+        }
+      });
+    }
+
+    // GPS Radar & Full Atlas
+    const mapClickTargets = [];
+    function drawMap(canvas, full = false) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width; const h = canvas.height;
+      const minC = -76; const span = 152;
+      const toPx = (wx, wz) => ({ x: ((wx - minC) / span) * w, y: ((wz - minC) / span) * h });
+      const s = w / span;
+
+      // Land & Ocean
+      ctx.fillStyle = full ? '#141926' : '#10141f';
+      ctx.fillRect(0, 0, w, h);
+      const beachX = toPx(47, 0).x;
+      ctx.fillStyle = '#d4bc8c'; ctx.fillRect(beachX, 0, 12 * s, h);
+      ctx.fillStyle = '#0e526b'; ctx.fillRect(toPx(58, 0).x, 0, w, h);
+
+      // Roads
+      ctx.fillStyle = '#2d3240';
+      ctx.fillRect(0, toPx(0, -6).y, toPx(40, 0).x, 12 * s);
+      ctx.fillRect(toPx(-6, 0).x, 0, 12 * s, h);
+      ctx.fillRect(0, toPx(0, -39).y, toPx(40, 0).x, 10 * s);
+      ctx.fillRect(0, toPx(0, 29).y, toPx(40, 0).x, 10 * s);
+      ctx.fillRect(toPx(-39, 0).x, 0, 10 * s, h);
+      ctx.fillRect(toPx(29, 0).x, 0, 10 * s, h);
+
+      // GPS Route Line to active mission beacon
+      const missionTgt = story.getPrimaryTarget();
+      if (missionTgt) {
+        const p1 = toPx(playerPosition.x, playerPosition.z);
+        const p2 = toPx(missionTgt.x, missionTgt.z);
+        ctx.strokeStyle = '#38e8ff';
+        ctx.lineWidth = full ? 3.5 : 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#38e8ff';
+        ctx.beginPath(); ctx.arc(p2.x, p2.y, full ? 8 : 5, 0, Math.PI * 2); ctx.fill();
+      }
+
+      if (full) mapClickTargets.length = 0;
+
+      interactiveLandmarks.forEach((lm) => {
+        const p = toPx(lm.hotspotPos.x, lm.hotspotPos.z);
+        ctx.fillStyle = lm.id === 'athenaeum' ? '#e59a47' : '#fcd34d';
+        ctx.beginPath(); ctx.arc(p.x, p.y, full ? 6.5 : 3, 0, Math.PI * 2); ctx.fill();
+        if (full) {
+          ctx.fillStyle = '#f8fafc'; ctx.font = '600 10px Inter, sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(lm.name, p.x, p.y - 10);
+          mapClickTargets.push({ x: p.x, y: p.y, r: 16, type: 'landmark', landmark: lm });
         }
       });
 
-      // Create floating 3D-projected HTML Hotspot Pin
-      const pin = document.createElement('button');
-      pin.className = 'hotspot-pin';
-      pin.setAttribute('aria-label', `Inspect ${data.name}`);
-      pin.innerHTML = `
-        <span class="hotspot-label">${data.name}</span>
-        <span class="hotspot-dot">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-950" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="4"></circle>
-          </svg>
-        </span>
-      `;
-      pin.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectLandmark(data);
+      drivableCars.forEach((c) => {
+        const cp = toPx(c.root.position.x, c.root.position.z);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(cp.x - (full ? 5 : 3), cp.y - (full ? 7 : 4), full ? 10 : 6, full ? 14 : 8);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(cp.x - (full ? 5 : 3), cp.y - (full ? 7 : 4), full ? 10 : 6, full ? 14 : 8);
+        if (full) mapClickTargets.push({ x: cp.x, y: cp.y, r: 16, type: 'car', car: c });
       });
-      hotspotsLayer.appendChild(pin);
-      data.pinEl = pin;
 
-      // Add to Quick-Jump Landmarks Drawer
-      const item = document.createElement('button');
-      item.className = 'w-full text-left px-3 py-2 rounded-xl hover:bg-amber-900/12 transition-colors flex items-center justify-between gap-2 group';
-      item.innerHTML = `
-        <div>
-          <div class="font-vintage text-base font-bold text-stone-800 group-hover:text-amber-950 leading-tight">${data.name}</div>
-          <div class="text-[11px] text-stone-500">${data.category} • ${data.era}</div>
-        </div>
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-stone-400 group-hover:text-amber-800 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      `;
-      item.addEventListener('click', () => {
-        selectLandmark(data);
-        toggleLandmarksDrawer(false);
+      const pl = toPx(playerPosition.x, playerPosition.z);
+      ctx.save(); ctx.translate(pl.x, pl.y); ctx.rotate(-cameraYaw);
+      ctx.fillStyle = 'rgba(52, 211, 153, 0.32)';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, full ? 24 : 15, -Math.PI / 2 - 0.45, -Math.PI / 2 + 0.45); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#34d399'; ctx.beginPath(); ctx.arc(0, 0, full ? 6 : 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+    }
+
+    document.getElementById('world-map-canvas').addEventListener('click', (e) => {
+      const cv = e.currentTarget; const r = cv.getBoundingClientRect();
+      const cx = ((e.clientX - r.left) / r.width) * cv.width;
+      const cy = ((e.clientY - r.top) / r.height) * cv.height;
+      const hit = mapClickTargets.find((t) => Math.hypot(cx - t.x, cy - t.y) <= t.r);
+      if (!hit) return;
+      toggleWorldMap(false);
+      if (hit.type === 'car') { if (state.activeCar && state.activeCar !== hit.car) exitCar(); enterCar(hit.car); }
+      else { if (state.activeCar) exitCar(); selectLandmark(hit.landmark); }
+    });
+
+    // UI Panels & Buttons
+    function updateCameraModeLabel() {
+      const el = document.getElementById('camera-mode-label');
+      el.textContent = state.activeCar ? (state.carCameraMode === 'chase' ? 'Chase Cam' : state.carCameraMode === 'hood' ? 'Driver Cam' : 'Orbit Cam') : (state.cameraMode === 'first' ? '1st Person' : '3rd Person');
+    }
+    function cycleCameraMode() {
+      if (state.activeCar) {
+        const order = ['chase', 'hood', 'orbit'];
+        state.carCameraMode = order[(order.indexOf(state.carCameraMode) + 1) % order.length];
+      } else {
+        state.cameraMode = state.cameraMode === 'first' ? 'third' : 'first';
+        localPlayerRig.root.visible = state.cameraMode === 'third';
+      }
+      updateCameraModeLabel();
+    }
+    function toggleWorldMap(f) {
+      state.mapModalOpen = typeof f === 'boolean' ? f : !state.mapModalOpen;
+      const m = document.getElementById('world-map-modal');
+      m.classList.toggle('hidden', !state.mapModalOpen); m.classList.toggle('flex', state.mapModalOpen);
+      if (state.mapModalOpen) drawMap(document.getElementById('world-map-canvas'), true);
+    }
+    function toggleSettings(f) {
+      state.settingsOpen = typeof f === 'boolean' ? f : !state.settingsOpen;
+      const m = document.getElementById('settings-modal');
+      m.classList.toggle('hidden', !state.settingsOpen); m.classList.toggle('flex', state.settingsOpen);
+    }
+    function renderJournal() {
+      const list = document.getElementById('journal-chapters');
+      list.innerHTML = '';
+      CHAPTERS.forEach((ch, idx) => {
+        const done = story.state.completed || idx < story.state.chapterIndex;
+        const current = !story.state.completed && idx === story.state.chapterIndex;
+        const card = document.createElement('div');
+        card.className = `rounded-2xl p-3.5 border ${current ? 'bg-cyan-500/15 border-cyan-300/50' : done ? 'bg-emerald-500/10 border-emerald-300/30' : 'bg-white/5 border-white/10'}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-white">${ch.title}</div>
+              <div class="text-[11px] text-white/75 mt-0.5">${ch.summary}</div>
+            </div>
+            <button class="px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 ${current ? 'bg-cyan-500 text-slate-950' : 'bg-white/15 hover:bg-white/25 text-white'}">${current ? 'Active' : done ? 'Replay' : 'Play'}</button>
+          </div>`;
+        card.querySelector('button').onclick = () => { story.jumpToChapter(idx); toggleJournal(false); };
+        list.appendChild(card);
       });
-      landmarksListEl.appendChild(item);
-
-      interactiveLandmarks.push(data);
+    }
+    function toggleJournal(f) {
+      state.journalOpen = typeof f === 'boolean' ? f : !state.journalOpen;
+      const m = document.getElementById('journal-modal');
+      m.classList.toggle('hidden', !state.journalOpen); m.classList.toggle('flex', state.journalOpen);
+      if (state.journalOpen) renderJournal();
     }
 
     function selectLandmark(landmark) {
       if (landmark.id === 'athenaeum') {
-        requestReturnToLibrary();
+        if (state.activeCar) exitCar();
+        window.parent.postMessage({ type: 'return-to-library' }, window.location.origin);
         return;
       }
-
-      playerVelocity.set(0, 0, 0);
-      state.movementAmount = 0;
       state.selectedLandmark = landmark;
-
-      // Start smooth camera transition
-      state.cameraTransition = {
-        startPos: camera.position.clone(),
-        endPos: landmark.focusPos.clone(),
-        startTarget: controls.target.clone(),
-        endTarget: landmark.focusTarget.clone(),
-        progress: 0,
-        duration: 1.25
-      };
-
-      // Populate & show Info Card
+      state.cameraTransition = { startPos: camera.position.clone(), endPos: landmark.focusPos.clone(), startTarget: controls.target.clone(), endTarget: landmark.focusTarget.clone(), progress: 0, duration: 1.1 };
       document.getElementById('info-category').textContent = landmark.category;
       document.getElementById('info-name').textContent = landmark.name;
-      document.getElementById('info-style').textContent = landmark.style;
-      document.getElementById('info-era').textContent = landmark.era;
       document.getElementById('info-desc').textContent = landmark.desc;
-
-      const featUl = document.getElementById('info-features');
-      featUl.innerHTML = landmark.features
-        .map((f) => `<li class="flex items-start gap-2"><span class="text-amber-700 mt-0.5">✦</span><span>${f}</span></li>`)
-        .join('');
-
-      const card = document.getElementById('info-card');
-      card.classList.remove('info-card-hidden');
-      card.classList.add('info-card-visible');
+      document.getElementById('info-card').classList.remove('hidden');
     }
 
-    function returnToOverview() {
-      state.selectedLandmark = null;
-      playerVelocity.set(0, 0, 0);
-      state.movementAmount = 0;
-      const card = document.getElementById('info-card');
-      card.classList.remove('info-card-visible');
-      card.classList.add('info-card-hidden');
-
-      state.cameraTransition = {
-        startPos: camera.position.clone(),
-        endPos: TOWN_ENTRY.position.clone(),
-        startTarget: controls.target.clone(),
-        endTarget: TOWN_ENTRY.target.clone(),
-        progress: 0,
-        duration: 1.15
-      };
-    }
-
-    function applyLightingPreset(presetKey) {
-      const p = LIGHTING_PRESETS[presetKey];
-      if (!p) return;
-      state.currentTime = presetKey;
-
-      skyUniforms.topColor.value.copy(p.skyTop);
-      skyUniforms.midColor.value.copy(p.skyMid);
-      skyUniforms.horizonColor.value.copy(p.skyHorizon);
-
-      scene.fog.color.copy(p.fogColor);
-      scene.fog.density = p.fogDensity;
-
-      sunLight.color.copy(p.sunColor);
-      sunLight.intensity = p.sunIntensity;
-      sunLight.position.copy(p.sunPos);
-
-      hemiLight.color.copy(p.hemiSky);
-      hemiLight.groundColor.copy(p.hemiGround);
-      hemiLight.intensity = p.hemiIntensity;
-
-      sharedWindowGlowMat.emissiveIntensity = p.windowEmissive;
-      renderer.toneMappingExposure = p.exposure;
-
-      streetLampBulbs.forEach((b) => {
-        b.emissiveIntensity = presetKey === 'morning' ? 0.35 : (presetKey === 'twilight' ? 2.6 : 1.7);
-      });
-
-      // Update active button state
-      document.querySelectorAll('.time-btn').forEach((btn) => {
-        const active = btn.dataset.time === presetKey;
-        btn.className = active
-          ? 'time-btn px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all bg-amber-500/30 text-amber-100 border border-amber-300/40'
-          : 'time-btn px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all text-amber-100/70 hover:text-amber-100 hover:bg-white/5 border border-transparent';
-      });
-    }
-
-    let drawerOpen = false;
-    function toggleLandmarksDrawer(forceState) {
-      drawerOpen = typeof forceState === 'boolean' ? forceState : !drawerOpen;
-      const drawer = document.getElementById('landmarks-drawer');
-      if (drawerOpen) {
-        drawer.classList.remove('drawer-hidden');
-        drawer.classList.add('drawer-visible');
-      } else {
-        drawer.classList.remove('drawer-visible');
-        drawer.classList.add('drawer-hidden');
-      }
-    }
-
-    // Wire HUD Buttons
-    document.querySelectorAll('.time-btn').forEach((btn) => {
-      btn.addEventListener('click', () => applyLightingPreset(btn.dataset.time));
+    document.querySelectorAll('.time-btn').forEach((b) => b.addEventListener('click', () => applyLightingPreset(b.dataset.time)));
+    document.getElementById('btn-drive-car').addEventListener('click', () => state.activeCar ? exitCar() : enterCar(getNearestCar(999)));
+    document.getElementById('btn-car-exit').addEventListener('click', exitCar);
+    document.getElementById('btn-car-horn').addEventListener('click', () => carAudio.playHorn());
+    document.getElementById('btn-car-lights').addEventListener('click', () => {
+      if (!state.activeCar) return;
+      state.activeCar.lightsOn = !state.activeCar.lightsOn;
+      state.activeCar.headSpot.intensity = state.activeCar.lightsOn ? 3.6 : 0;
     });
-
+    document.getElementById('btn-car-siren').addEventListener('click', () => { if (state.activeCar?.style === 'police') state.activeCar.sirenOn = !state.activeCar.sirenOn; });
+    document.getElementById('btn-camera-mode').addEventListener('click', cycleCameraMode);
+    document.getElementById('btn-world-map').addEventListener('click', () => toggleWorldMap());
+    document.getElementById('minimap-shell').addEventListener('click', () => toggleWorldMap(true));
+    document.getElementById('btn-close-map').addEventListener('click', () => toggleWorldMap(false));
+    document.getElementById('btn-journal').addEventListener('click', () => toggleJournal());
+    document.getElementById('btn-close-journal').addEventListener('click', () => toggleJournal(false));
+    document.getElementById('btn-reset-story').addEventListener('click', () => { story.resetCampaign(); renderJournal(); });
+    document.getElementById('btn-settings').addEventListener('click', () => toggleSettings());
+    document.getElementById('btn-close-settings').addEventListener('click', () => toggleSettings(false));
+    document.getElementById('btn-close-info').addEventListener('click', () => document.getElementById('info-card').classList.add('hidden'));
     document.getElementById('btn-hotspots').addEventListener('click', () => {
       state.showHotspots = !state.showHotspots;
       hotspotsLayer.style.opacity = state.showHotspots ? '1' : '0';
-      hotspotsLayer.style.pointerEvents = 'none';
-      const ind = document.getElementById('hotspot-indicator');
-      ind.className = state.showHotspots
-        ? 'w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]'
-        : 'w-2 h-2 rounded-full bg-stone-500';
+      document.getElementById('hotspot-indicator').className = state.showHotspots ? 'w-2 h-2 rounded-full bg-cyan-400' : 'w-2 h-2 rounded-full bg-slate-500';
     });
 
-    document.getElementById('btn-landmarks').addEventListener('click', () => toggleLandmarksDrawer());
-    document.getElementById('btn-close-drawer').addEventListener('click', () => toggleLandmarksDrawer(false));
-    document.getElementById('btn-reset').addEventListener('click', returnToOverview);
-    document.getElementById('btn-close-info').addEventListener('click', returnToOverview);
-    document.getElementById('btn-return-overview').addEventListener('click', returnToOverview);
+    document.querySelectorAll('.quality-btn').forEach((btn) => btn.addEventListener('click', () => {
+      const q = btn.dataset.quality;
+      const pr = q === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2) : q === 'high' ? 1.5 : 1.0;
+      renderer.setPixelRatio(pr);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+      state.bloomEnabled = q !== 'balanced';
+      state.gradeEnabled = q !== 'balanced';
+      gradePass.enabled = state.gradeEnabled;
+      document.getElementById('opt-bloom').checked = state.bloomEnabled;
+      document.getElementById('opt-grade').checked = state.gradeEnabled;
+      document.querySelectorAll('.quality-btn').forEach((b) => { b.className = b === btn ? 'quality-btn py-2 rounded-xl border border-cyan-300/60 bg-cyan-500/25 font-bold' : 'quality-btn py-2 rounded-xl border border-white/15 bg-white/5'; });
+    }));
+    document.getElementById('opt-bloom').addEventListener('change', (e) => { state.bloomEnabled = e.target.checked; });
+    document.getElementById('opt-grade').addEventListener('change', (e) => { state.gradeEnabled = e.target.checked; gradePass.enabled = state.gradeEnabled; });
+    document.getElementById('opt-shadows').addEventListener('change', (e) => { renderer.shadowMap.enabled = e.target.checked; });
+    document.getElementById('opt-sound').addEventListener('change', (e) => { carAudio.enabled = e.target.checked; if (!e.target.checked) carAudio.stopEngine(); });
+    document.getElementById('opt-sens').addEventListener('input', (e) => { state.lookSensitivity = Number(e.target.value) || 1; document.getElementById('opt-sens-val').textContent = `${state.lookSensitivity.toFixed(1)}×`; });
 
-    /* =========================================================================
-       12. RAYCASTING HOVER HIGHLIGHT & CLICK-TO-INSPECT
-       ========================================================================= */
+    // Input & Raycast
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
-    const hoverTooltip = document.getElementById('hover-tooltip');
-    const tooltipName = document.getElementById('tooltip-name');
-    const tooltipCat = document.getElementById('tooltip-cat');
-
-    function setLandmarkHighlight(landmark, active) {
-      if (!landmark) return;
-      landmark.group.traverse((child) => {
-        if (child.isMesh && child.material && child.material !== sharedWindowGlowMat) {
-          if (active) {
-            if (!child.userData.origEmissive && child.material.emissive) {
-              child.userData.origEmissive = child.material.emissive.clone();
-              child.userData.origEmissiveIntensity = child.material.emissiveIntensity;
-            }
-            if (child.material.emissive) {
-              child.material.emissive.set('#d48b3b');
-              child.material.emissiveIntensity = 0.22;
-            }
-          } else if (child.userData.origEmissive && child.material.emissive) {
-            child.material.emissive.copy(child.userData.origEmissive);
-            child.material.emissiveIntensity = child.userData.origEmissiveIntensity;
-          }
-        }
-      });
-    }
-
-    function getHoveredLandmark(clientX, clientY) {
-      pointer.x = (clientX / window.innerWidth) * 2 - 1;
-      pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+    function getHovered(cx, cy) {
+      pointer.x = (cx / window.innerWidth) * 2 - 1; pointer.y = -(cy / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
-
-      const targets = interactiveLandmarks.map((l) => l.group);
-      const intersects = raycaster.intersectObjects(targets, true);
-      if (intersects.length > 0) {
-        const lid = intersects[0].object.userData.landmarkId;
-        return interactiveLandmarks.find((l) => l.id === lid) || null;
-      }
+      const hits = raycaster.intersectObjects([...interactiveLandmarks.map((l) => l.group), ...drivableCars.map((c) => c.root)], true);
+      if (!hits.length) return null;
+      const obj = hits[0].object;
+      if (obj.userData.carId) return { type: 'car', car: drivableCars.find((c) => c.id === obj.userData.carId) };
+      if (obj.userData.landmarkId) return { type: 'landmark', landmark: interactiveLandmarks.find((l) => l.id === obj.userData.landmarkId) };
       return null;
     }
-
-    function syncAnglesFromTarget() {
-      const direction = controls.target.clone().sub(camera.position).normalize();
-      cameraYaw = Math.atan2(-direction.x, -direction.z);
-      cameraPitch = Math.asin(THREE.MathUtils.clamp(direction.y, -1, 1));
-    }
-
-    function requestReturnToLibrary() {
-      window.parent.postMessage({ type: 'return-to-library' }, window.location.origin);
-    }
-
-    function isNearLibraryDoor() {
-      return Math.hypot(playerPosition.x + 32.65, playerPosition.z) < 2.35;
-    }
-
-    function updateLibraryDoorPrompt() {
-      const isNear = isNearLibraryDoor();
-      document.getElementById('library-door-prompt').classList.toggle('hidden', !isNear);
-      document.getElementById('library-door-touch').classList.toggle('hidden', !isNear);
-    }
-
-    document.getElementById('library-door-touch').addEventListener('click', requestReturnToLibrary);
-
-    renderer.domElement.addEventListener('pointermove', (e) => {
-      if (state.isDragging && e.pointerId === state.lookPointerId) {
-        const dx = e.clientX - state.lastPointer.x;
-        const dy = e.clientY - state.lastPointer.y;
-        state.lastPointer.set(e.clientX, e.clientY);
-        cameraYaw -= dx * 0.0032;
-        cameraPitch = THREE.MathUtils.clamp(cameraPitch - dy * 0.0028, -0.72, 0.72);
-        controls.update();
-        hoverTooltip.classList.add('hidden');
-        return;
-      }
-      if (state.isDragging) {
-        hoverTooltip.classList.add('hidden');
-        return;
-      }
-      const found = getHoveredLandmark(e.clientX, e.clientY);
-      if (found !== state.hoveredObject) {
-        setLandmarkHighlight(state.hoveredObject, false);
-        state.hoveredObject = found;
-        setLandmarkHighlight(state.hoveredObject, true);
-      }
-
-      if (found) {
-        renderer.domElement.style.cursor = 'pointer';
-        tooltipName.textContent = found.name;
-        tooltipCat.textContent = found.category;
-        hoverTooltip.style.left = `${Math.min(e.clientX + 16, window.innerWidth - 200)}px`;
-        hoverTooltip.style.top = `${Math.max(e.clientY - 12, 16)}px`;
-        hoverTooltip.classList.remove('hidden');
-      } else {
-        renderer.domElement.style.cursor = 'grab';
-        hoverTooltip.classList.add('hidden');
-      }
-    });
 
     renderer.domElement.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       state.pointerDownPos = { x: e.clientX, y: e.clientY };
-      state.isDragging = true;
-      state.lookPointerId = e.pointerId;
-      state.lastPointer.set(e.clientX, e.clientY);
+      state.isDragging = true; state.lookPointerId = e.pointerId; state.lastPointer.set(e.clientX, e.clientY);
       renderer.domElement.setPointerCapture?.(e.pointerId);
-      renderer.domElement.style.cursor = 'grabbing';
-      if (state.cameraTransition) {
-        syncAnglesFromTarget();
-        playerPosition.set(camera.position.x, 0, camera.position.z);
-        playerVelocity.set(0, 0, 0);
-      }
       state.cameraTransition = null;
     });
-
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      if (state.isDragging && e.pointerId === state.lookPointerId) {
+        const dx = e.clientX - state.lastPointer.x; const dy = e.clientY - state.lastPointer.y;
+        state.lastPointer.set(e.clientX, e.clientY);
+        cameraYaw -= dx * 0.0032 * state.lookSensitivity;
+        cameraPitch = THREE.MathUtils.clamp(cameraPitch - dy * 0.0028 * state.lookSensitivity, -0.78, 0.78);
+        controls.update();
+        return;
+      }
+      const found = getHovered(e.clientX, e.clientY);
+      const tt = document.getElementById('hover-tooltip');
+      if (found?.type === 'car') {
+        document.getElementById('tooltip-name').textContent = found.car.name;
+        document.getElementById('tooltip-cat').textContent = 'Click or [E] to Drive';
+        tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - 200)}px`; tt.style.top = `${Math.max(e.clientY - 12, 16)}px`;
+        tt.classList.remove('hidden');
+      } else if (found?.type === 'landmark') {
+        document.getElementById('tooltip-name').textContent = found.landmark.name;
+        document.getElementById('tooltip-cat').textContent = found.landmark.category;
+        tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - 200)}px`; tt.style.top = `${Math.max(e.clientY - 12, 16)}px`;
+        tt.classList.remove('hidden');
+      } else { tt.classList.add('hidden'); }
+    });
     renderer.domElement.addEventListener('pointerup', (e) => {
-      state.isDragging = false;
-      state.lookPointerId = null;
-      renderer.domElement.style.cursor = 'grab';
-      const dx = e.clientX - state.pointerDownPos.x;
-      const dy = e.clientY - state.pointerDownPos.y;
-      if (Math.hypot(dx, dy) < 6) {
-        const clicked = getHoveredLandmark(e.clientX, e.clientY);
-        if (clicked) {
-          selectLandmark(clicked);
-        }
+      state.isDragging = false; state.lookPointerId = null;
+      if (Math.hypot(e.clientX - state.pointerDownPos.x, e.clientY - state.pointerDownPos.y) < 6) {
+        const clicked = getHovered(e.clientX, e.clientY);
+        if (clicked?.type === 'car') { state.activeCar === clicked.car ? exitCar() : enterCar(clicked.car); }
+        else if (clicked?.type === 'landmark') selectLandmark(clicked.landmark);
       }
     });
-
-    renderer.domElement.addEventListener('pointercancel', () => {
-      state.isDragging = false;
-      state.lookPointerId = null;
-      renderer.domElement.style.cursor = 'grab';
-    });
-
     renderer.domElement.addEventListener('wheel', (e) => {
       e.preventDefault();
-      camera.fov = THREE.MathUtils.clamp(camera.fov * (e.deltaY > 0 ? 1.08 : 0.92), 32, 72);
+      camera.fov = THREE.MathUtils.clamp(camera.fov * (e.deltaY > 0 ? 1.08 : 0.92), 34, 75);
       camera.updateProjectionMatrix();
     }, { passive: false });
 
-    /* =========================================================================
-       13. FIRST-PERSON WALKING (MATCHES THE LIBRARY CONTROLS)
-       ========================================================================= */
-    const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright']);
+    const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowleft', 'arrowdown', 'arrowright', 'shift', ' ']);
     window.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      if (key === 'e' && !e.repeat) {
-        if (isNearLibraryDoor()) requestReturnToLibrary();
+      const k = e.key.toLowerCase();
+      if (k === 'e' && !e.repeat) {
+        if (state.activeCar) exitCar();
+        else if (Math.hypot(playerPosition.x + 53.5, playerPosition.z) < 3.2) window.parent.postMessage({ type: 'return-to-library' }, window.location.origin);
+        else { const nc = getNearestCar(4.5); if (nc) enterCar(nc); }
         return;
       }
-      if (key === 'escape') {
-        toggleLandmarksDrawer(false);
-        returnToOverview();
-        return;
-      }
-      if (!MOVE_KEYS.has(key)) return;
+      if (k === 'm' && !e.repeat) { toggleWorldMap(); return; }
+      if (k === 'j' && !e.repeat) { toggleJournal(); return; }
+      if ((k === 'v' || k === 'c') && !e.repeat) { cycleCameraMode(); return; }
+      if (k === 'l' && !e.repeat && state.activeCar) { state.activeCar.lightsOn = !state.activeCar.lightsOn; state.activeCar.headSpot.intensity = state.activeCar.lightsOn ? 3.6 : 0; return; }
+      if (k === 'h' && !e.repeat && state.activeCar) { carAudio.playHorn(); return; }
+      if (k === 'y' && !e.repeat && state.activeCar?.style === 'police') { state.activeCar.sirenOn = !state.activeCar.sirenOn; return; }
+      if (k === 'escape') { toggleWorldMap(false); toggleSettings(false); toggleJournal(false); document.getElementById('info-card').classList.add('hidden'); return; }
+      if (!MOVE_KEYS.has(k)) return;
       e.preventDefault();
-      state.keys[key] = true;
+      if (k === ' ' && !e.repeat && !state.activeCar && state.isGrounded) { state.playerVerticalVel = 5.4; state.isGrounded = false; }
+      state.keys[k] = true;
+    });
+    window.addEventListener('keyup', (e) => { state.keys[e.key.toLowerCase()] = false; });
+
+    document.querySelectorAll('[data-town-move]').forEach((b) => {
+      const d = b.dataset.townMove;
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); state.touchMoves.add(d); });
+      const rel = () => state.touchMoves.delete(d);
+      b.addEventListener('pointerup', rel); b.addEventListener('pointercancel', rel); b.addEventListener('lostpointercapture', rel);
     });
 
-    window.addEventListener('keyup', (e) => {
-      state.keys[e.key.toLowerCase()] = false;
-    });
-
-    function updateKeyboardNavigation(dt) {
-      const forward = Number(state.keys.w || state.keys.arrowup || state.touchMoves.has('forward'))
-        - Number(state.keys.s || state.keys.arrowdown || state.touchMoves.has('backward'));
-      const side = Number(state.keys.d || state.keys.arrowright || state.touchMoves.has('right'))
-        - Number(state.keys.a || state.keys.arrowleft || state.touchMoves.has('left'));
-      const desired = new THREE.Vector3(side, 0, -forward);
-      if (desired.lengthSq()) desired.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
-      desired.multiplyScalar(2.15);
-      playerVelocity.lerp(desired, 1 - Math.exp(-11 * dt));
-
-      const moveX = playerVelocity.x * dt;
-      const moveZ = playerVelocity.z * dt;
-      if (Math.abs(moveX) > 0.0001 && canWalkTo(playerPosition.x + moveX, playerPosition.z)) playerPosition.x += moveX;
-      else if (Math.abs(moveX) > 0.0001) playerVelocity.x = 0;
-      if (Math.abs(moveZ) > 0.0001 && canWalkTo(playerPosition.x, playerPosition.z + moveZ)) playerPosition.z += moveZ;
-      else if (Math.abs(moveZ) > 0.0001) playerVelocity.z = 0;
-
-      state.movementAmount = Math.min(1, Math.hypot(playerVelocity.x, playerVelocity.z) / 2.15);
-      if (state.movementAmount > 0.04) state.walkCycle += dt * 10.5;
-      const headBob = Math.sin(state.walkCycle) * 0.028 * state.movementAmount;
-      camera.position.set(playerPosition.x, 1.68 + headBob, playerPosition.z);
-      controls.update();
-    }
-
-    function canWalkTo(x, z) {
-      const radius = 0.28;
-      if (x < -45 + radius || x > 45 - radius || z < -45 + radius || z > 45 - radius) return false;
-      return !walkObstacles.some((obstacle) => (
-        x + radius > obstacle.minX && x - radius < obstacle.maxX
-        && z + radius > obstacle.minZ && z - radius < obstacle.maxZ
-      ));
-    }
-
-    document.querySelectorAll('[data-town-move]').forEach((button) => {
-      const direction = button.dataset.townMove;
-      button.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        button.setPointerCapture?.(e.pointerId);
-        state.touchMoves.add(direction);
-      });
-      const release = () => state.touchMoves.delete(direction);
-      button.addEventListener('pointerup', release);
-      button.addEventListener('pointercancel', release);
-      button.addEventListener('lostpointercapture', release);
-    });
-
-    /* =========================================================================
-       14. ANIMATION LOOP (PEDESTRIANS, SMOKE, BIRDS, FOUNTAIN, HOTSPOTS)
-       ========================================================================= */
+    // Animation Loop
     const clock = new THREE.Clock(false);
     const tempProj = new THREE.Vector3();
-
-    function updatePedestrians(dt, elapsed) {
-      pedestrians.forEach((p) => {
-        if (p.type === 'walker') {
-          if (p.pauseTimer > 0) {
-            p.pauseTimer -= dt;
-            // Subtle idle look around while window shopping
-            p.rig.leftLeg.rotation.x *= 0.85;
-            p.rig.rightLeg.rotation.x *= 0.85;
-            p.rig.leftArm.rotation.x *= 0.85;
-            p.rig.rightArm.rotation.x *= 0.85;
-            p.rig.headGroup.rotation.y = Math.sin(elapsed * 1.4 + p.walkCycle) * 0.35;
-            return;
-          }
-
-          const target = p.route[p.targetIdx];
-          const pos = p.rig.root.position;
-          const dir = new THREE.Vector3().subVectors(target, pos);
-          dir.y = 0;
-          const dist = dir.length();
-
-          if (dist < 0.35) {
-            p.targetIdx = (p.targetIdx + 1) % p.route.length;
-            // Occasionally pause briefly near shops/corners
-            if (Math.random() < 0.28) {
-              p.pauseTimer = 1.6 + Math.random() * 2.4;
-            }
-          } else {
-            dir.normalize();
-            pos.addScaledVector(dir, p.speed * dt);
-
-            // Smooth facing rotation
-            const desiredAngle = Math.atan2(dir.x, dir.z);
-            let angleDiff = desiredAngle - p.rig.root.rotation.y;
-            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-            p.rig.root.rotation.y += angleDiff * Math.min(1, dt * 6);
-
-            // Articulated stride swing & body bob
-            p.walkCycle += dt * p.speed * 4.4;
-            const swing = Math.sin(p.walkCycle) * 0.55;
-            p.rig.leftLeg.rotation.x = swing;
-            p.rig.rightLeg.rotation.x = -swing;
-            p.rig.leftArm.rotation.x = -swing * 0.65;
-            p.rig.rightArm.rotation.x = swing * 0.65;
-            p.rig.bodyPivot.position.y = Math.abs(Math.cos(p.walkCycle)) * 0.045;
-            p.rig.headGroup.rotation.y *= 0.9;
-          }
-        } else if (p.type === 'conversing') {
-          const t = elapsed * 1.8 + p.phase;
-          p.rig.headGroup.rotation.x = Math.sin(t) * 0.08;
-          p.rig.headGroup.rotation.y = Math.sin(t * 0.7) * 0.14;
-          p.rig.rightArm.rotation.x = -0.35 + Math.sin(t * 1.3) * 0.22;
-          p.rig.leftArm.rotation.x = -0.15 + Math.cos(t * 0.9) * 0.12;
-        }
-      });
-    }
-
-    function updateAmbientAnimations(dt, elapsed) {
-      // Gently swaying tree canopies
-      swayingTrees.forEach((t) => {
-        t.canopy.rotation.z = Math.sin(elapsed * t.speed + t.phase) * 0.028;
-        t.canopy.rotation.x = Math.cos(elapsed * t.speed * 0.8 + t.phase) * 0.02;
-      });
-
-      // Chimney smoke puffs
-      smokeParticles.forEach((s) => {
-        s.age += dt * s.speed;
-        if (s.age >= 1) s.age = 0;
-        const yRise = s.age * 5.2;
-        s.mesh.position.set(
-          s.origin.x + s.age * s.driftX + Math.sin(elapsed + s.age * 4) * 0.2,
-          s.origin.y + yRise,
-          s.origin.z + s.age * s.driftZ
-        );
-        const scale = 0.55 + s.age * 2.2;
-        s.mesh.scale.setScalar(scale);
-        s.mesh.material.opacity = Math.sin(s.age * Math.PI) * 0.34;
-      });
-
-      // Soaring birds overhead
-      birds.forEach((b) => {
-        b.angle += dt * b.speed;
-        const bx = Math.cos(b.angle) * b.radius;
-        const bz = Math.sin(b.angle) * b.radius;
-        const by = b.height + Math.sin(elapsed * 0.9 + b.flapPhase) * 1.2;
-        b.group.position.set(bx, by, bz);
-        b.group.rotation.y = -b.angle;
-        const flap = Math.sin(elapsed * b.flapSpeed + b.flapPhase) * 0.52;
-        b.leftWing.rotation.z = flap;
-        b.rightWing.rotation.z = -flap;
-      });
-
-      // Street lamp gentle warm flicker
-      const baseIntensity = LIGHTING_PRESETS[state.currentTime].lampIntensity;
-      streetLampLights.forEach((sl) => {
-        const flicker = Math.sin(elapsed * sl.speed + sl.phase) * 0.07 + Math.sin(elapsed * 7.3 + sl.phase) * 0.03;
-        sl.light.intensity = Math.max(0, baseIntensity * (1 + flicker));
-      });
-
-      // Fountain water ripple & sparkling droplets
-      if (fountainWaterMesh) {
-        fountainWaterMesh.position.y = 0.72 + Math.sin(elapsed * 2.4) * 0.015;
-      }
-      fountainDroplets.forEach((drop) => {
-        const d = drop.userData;
-        d.phase = (d.phase + dt * d.speed) % 1;
-        const t = d.phase;
-        const r = 0.22 + t * d.radius;
-        const y = 3.85 - 3.1 * t * t + 0.55 * t;
-        drop.position.set(Math.cos(d.angle) * r, y, Math.sin(d.angle) * r);
-      });
-
-      // Clockmaker's working facade clock
-      if (clockHands.minute && clockHands.hour) {
-        clockHands.minute.rotation.z = -elapsed * 0.35;
-        clockHands.hour.rotation.z = -elapsed * 0.03 - 1.2;
-      }
-    }
-
-    function updateHotspots() {
-      if (!state.showHotspots) return;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      interactiveLandmarks.forEach((l) => {
-        tempProj.copy(l.hotspotPos);
-        tempProj.project(camera);
-
-        const isBehind = tempProj.z > 1;
-        if (isBehind) {
-          l.pinEl.style.display = 'none';
-        } else {
-          const sx = (tempProj.x * 0.5 + 0.5) * w;
-          const sy = (-tempProj.y * 0.5 + 0.5) * h;
-          l.pinEl.style.display = 'block';
-          l.pinEl.style.left = `${sx}px`;
-          l.pinEl.style.top = `${sy}px`;
-        }
-      });
-    }
-
-    function updateCameraTransition(dt) {
-      if (!state.cameraTransition) return;
-      const tr = state.cameraTransition;
-      tr.progress = Math.min(1, tr.progress + dt / tr.duration);
-      // Smooth cubic ease-in-out
-      const t = tr.progress < 0.5
-        ? 4 * tr.progress * tr.progress * tr.progress
-        : 1 - Math.pow(-2 * tr.progress + 2, 3) / 2;
-
-      camera.position.lerpVectors(tr.startPos, tr.endPos, t);
-      controls.target.lerpVectors(tr.startTarget, tr.endTarget, t);
-      camera.lookAt(controls.target);
-
-      if (tr.progress >= 1) {
-        state.cameraTransition = null;
-        syncAnglesFromTarget();
-        playerPosition.set(camera.position.x, 0, camera.position.z);
-        playerVelocity.set(0, 0, 0);
-      }
-    }
-
-    let animationFrameId = 0;
-    let multiplayerPoseElapsed = 0;
+    let animId = 0;
+    let poseTimer = 0;
 
     function animate() {
-      if (!state.isActive) {
-        animationFrameId = 0;
-        return;
-      }
-      animationFrameId = requestAnimationFrame(animate);
+      if (!state.isActive) { animId = 0; return; }
+      animId = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.05);
       const elapsed = clock.elapsedTime;
 
-      updateCameraTransition(dt);
-      if (!state.cameraTransition) {
-        controls.update();
-        updateKeyboardNavigation(dt);
+      sky.uniforms.uTime.value = elapsed;
+      ocean.uniforms.uTime.value = elapsed;
+
+      if (state.cameraTransition) {
+        const tr = state.cameraTransition;
+        tr.progress = Math.min(1, tr.progress + dt / tr.duration);
+        const t = tr.progress < 0.5 ? 4 * tr.progress ** 3 : 1 - Math.pow(-2 * tr.progress + 2, 3) / 2;
+        camera.position.lerpVectors(tr.startPos, tr.endPos, t);
+        controls.target.lerpVectors(tr.startTarget, tr.endTarget, t);
+        camera.lookAt(controls.target);
+        if (tr.progress >= 1) {
+          state.cameraTransition = null;
+          const dir = controls.target.clone().sub(camera.position).normalize();
+          cameraYaw = Math.atan2(-dir.x, -dir.z); cameraPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+          playerPosition.set(camera.position.x, 0, camera.position.z);
+        }
+      } else {
+        updateNavigation(dt, elapsed);
       }
 
-      updatePedestrians(dt, elapsed);
-      updateRemotePlayers(dt, elapsed);
-      updateAmbientAnimations(dt, elapsed);
-      updateHotspots();
-      updateLibraryDoorPrompt();
+      // Citizens & Story NPCs
+      pedestrians.forEach((p) => {
+        if (p.pauseTimer > 0) { p.pauseTimer -= dt; poseHumanWalking(p.rig, 0, p.walkCycle, elapsed); return; }
+        const tgt = p.route[p.targetIdx]; const pos = p.rig.root.position;
+        const dir = new THREE.Vector3().subVectors(tgt, pos); dir.y = 0;
+        if (dir.length() < 0.4) { p.targetIdx = (p.targetIdx + 1) % p.route.length; if (Math.random() < 0.25) p.pauseTimer = 1.5; }
+        else {
+          dir.normalize(); pos.addScaledVector(dir, p.speed * dt);
+          let diff = Math.atan2(dir.x, dir.z) - p.rig.root.rotation.y;
+          diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+          p.rig.root.rotation.y += diff * Math.min(1, dt * 6);
+          p.walkCycle += dt * p.speed * 4.4;
+          poseHumanWalking(p.rig, 1, p.walkCycle, elapsed);
+        }
+      });
+      storyNPCs.forEach((n) => {
+        poseHumanWalking(n.rig, 0, 0, elapsed + n.phase);
+        n.rig.headGroup.rotation.y = Math.sin(elapsed * 1.1 + n.phase) * 0.22;
+      });
 
-      multiplayerPoseElapsed += dt;
-      if (multiplayerPoseElapsed >= 0.1) {
-        multiplayerPoseElapsed = 0;
+      // Ambient Trees, Fountain, Rain, Tire Smoke
+      world.swayingTrees.forEach((t) => { t.canopy.rotation.z = Math.sin(elapsed * t.speed + t.phase) * 0.032; });
+      if (world.fountainWaterMesh) world.fountainWaterMesh.position.y = 0.76 + Math.sin(elapsed * 2.4) * 0.015;
+      world.fountainDroplets.forEach((drop) => {
+        const d = drop.userData; d.phase = (d.phase + dt * d.speed) % 1;
+        const r = 0.22 + d.phase * d.radius;
+        drop.position.set(Math.cos(d.angle) * r, 3.85 - 3.1 * d.phase * d.phase + 0.55 * d.phase, Math.sin(d.angle) * r);
+      });
+      if (rainPoints.visible) {
+        const posArr = rainGeo.attributes.position.array;
+        for (let i = 0; i < rainCount; i++) {
+          posArr[i * 3 + 1] -= 24 * dt;
+          if (posArr[i * 3 + 1] < 0) {
+            posArr[i * 3] = playerPosition.x + (Math.random() - 0.5) * 70;
+            posArr[i * 3 + 1] = 22 + Math.random() * 6;
+            posArr[i * 3 + 2] = playerPosition.z + (Math.random() - 0.5) * 70;
+          }
+        }
+        rainGeo.attributes.position.needsUpdate = true;
+      }
+      for (let i = tireSmokePuffs.length - 1; i >= 0; i--) {
+        const p = tireSmokePuffs[i]; p.age += dt * 1.3;
+        p.mesh.position.y += dt * 1.1; p.mesh.scale.setScalar(1 + p.age * 2.8);
+        p.mesh.material.opacity = Math.max(0, 0.45 * (1 - p.age));
+        if (p.age >= 1) { scene.remove(p.mesh); p.mesh.material.dispose(); tireSmokePuffs.splice(i, 1); }
+      }
+
+      updateTrafficAndPolice(dt, elapsed);
+      story.update(dt, elapsed, playerPosition, Boolean(state.activeCar), policeUnits, openDialogue, openCipherModal);
+
+      // Update Mission HUD & Context Prompt
+      const ch = story.getCurrentChapter();
+      const step = story.getCurrentStep();
+      document.getElementById('mission-chapter-title').textContent = story.state.completed ? 'Free Roam: Leonida Legend' : ch.title;
+      document.getElementById('mission-objective-text').textContent = step ? step.label : 'All 10 chapters complete! Replay from Journal [J] or hunt remaining Palm Trophies.';
+      const tgt = story.getPrimaryTarget();
+      document.getElementById('mission-distance').textContent = tgt ? `${Math.round(Math.hypot(playerPosition.x - tgt.x, playerPosition.z - tgt.z))}m` : 'Done';
+      document.getElementById('hud-cash').textContent = `$${story.state.cash}`;
+      document.getElementById('hud-rep').textContent = `${story.state.rep} Rep`;
+      document.getElementById('hud-trophies').textContent = `🌴 ${story.state.trophies.length}/12`;
+      const starsEl = document.getElementById('hud-wanted');
+      starsEl.textContent = '★'.repeat(story.wantedStars) + '☆'.repeat(3 - story.wantedStars);
+      starsEl.className = story.wantedStars > 0 ? 'tracking-widest text-sm text-rose-400 animate-pulse' : 'tracking-widest text-sm text-white/30';
+
+      const timerBar = document.getElementById('mission-timer-bar');
+      if (step?.type === 'timedRace') {
+        timerBar.classList.remove('hidden');
+        document.getElementById('mission-timer-label').textContent = `Checkpoint ${story.raceIndex}/${step.points.length}`;
+        document.getElementById('mission-timer-val').textContent = `${Math.ceil(story.stepTimer)}s`;
+      } else if (step?.type === 'evadeWanted') {
+        timerBar.classList.remove('hidden');
+        document.getElementById('mission-timer-label').textContent = 'Evading Police';
+        document.getElementById('mission-timer-val').textContent = `${Math.ceil(story.evadeTimer)}s`;
+      } else { timerBar.classList.add('hidden'); }
+
+      // Context Prompt
+      const nearDoor = !state.activeCar && Math.hypot(playerPosition.x + 53.5, playerPosition.z) < 3.2;
+      const nearCar = !state.activeCar && getNearestCar(4.5);
+      const pEl = document.getElementById('context-action-prompt');
+      if (nearDoor) { document.getElementById('context-action-text').textContent = 'Enter The Grand Athenaeum'; pEl.classList.remove('hidden'); }
+      else if (nearCar) { document.getElementById('context-action-text').textContent = `Drive ${nearCar.name}`; pEl.classList.remove('hidden'); }
+      else { pEl.classList.add('hidden'); }
+
+      // Hotspots & Radar
+      if (state.showHotspots) {
+        interactiveLandmarks.forEach((l) => {
+          tempProj.copy(l.hotspotPos).project(camera);
+          if (tempProj.z > 1) l.pinEl.style.display = 'none';
+          else { l.pinEl.style.display = 'block'; l.pinEl.style.left = `${(tempProj.x * 0.5 + 0.5) * window.innerWidth}px`; l.pinEl.style.top = `${(-tempProj.y * 0.5 + 0.5) * window.innerHeight}px`; }
+        });
+      }
+      drawMap(document.getElementById('minimap-canvas'), false);
+      if (state.mapModalOpen) drawMap(document.getElementById('world-map-canvas'), true);
+
+      poseTimer += dt;
+      if (poseTimer >= 0.1) {
+        poseTimer = 0;
         window.parent.postMessage({
           type: 'town-pose',
-          pose: {
-            x: playerPosition.x,
-            z: playerPosition.z,
-            yaw: cameraYaw,
-            pitch: cameraPitch,
-            moving: state.movementAmount > 0.04,
-          },
+          pose: { x: THREE.MathUtils.clamp(playerPosition.x, -44, 44), z: THREE.MathUtils.clamp(playerPosition.z, -44, 44), yaw: state.activeCar ? state.activeCar.yaw : cameraYaw, pitch: cameraPitch, moving: state.activeCar ? Math.abs(state.activeCar.speed) > 0.2 : state.movementAmount > 0.04 }
         }, window.location.origin);
       }
 
-      renderer.render(scene, camera);
+      if (state.bloomEnabled) composer.render(); else renderer.render(scene, camera);
     }
 
     window.addEventListener('message', (event) => {
       if (event.origin !== window.location.origin || event.source !== window.parent) return;
-      if (event.data?.type === 'multiplayer-players') {
-        setMultiplayerPlayers(Array.isArray(event.data.players) ? event.data.players : []);
-        return;
-      }
-      if (event.data?.type === 'multiplayer-action') {
-        animatePlayerAction(event.data.action);
-        return;
-      }
+      if (event.data?.type === 'multiplayer-players') { setMultiplayerPlayers(Array.isArray(event.data.players) ? event.data.players : []); return; }
       if (event.data?.type !== 'town-active') return;
-
-      if (event.data.active && !state.isActive) {
-        state.isActive = true;
-        clock.start();
-        controls.update();
-        animate();
-      } else if (!event.data.active && state.isActive) {
-        state.isActive = false;
-        clock.stop();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-        animationFrameId = 0;
-        state.keys = {};
-        state.touchMoves.clear();
-        playerVelocity.set(0, 0, 0);
-      }
+      if (event.data.active && !state.isActive) { state.isActive = true; clock.start(); animate(); }
+      else if (!event.data.active && state.isActive) { state.isActive = false; clock.stop(); carAudio.stopEngine(); cancelAnimationFrame(animId); }
     });
 
-    /* =========================================================================
-       15. INITIALIZATION & RESPONSIVE RESIZE
-       ========================================================================= */
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); bloomPass.setSize(window.innerWidth, window.innerHeight);
     });
 
-    window.onload = function () {
-      try {
-        buildEnvironmentBase();
-        buildCentralFountain();
-        buildTownArchitecture();
-        buildPropsAndFoliage();
-        populatePedestrians();
-        initAmbientLife();
-
-        controls.update();
-        renderer.render(scene, camera);
-        const loader = document.getElementById('loading-screen');
-        loader.classList.add('fade-out');
-        window.parent.postMessage({ type: 'vieux-quartier-ready' }, window.location.origin);
-      } catch (err) {
-        console.error('Error initializing Vieux Quartier 3D scene:', err);
-      }
+    window.onload = () => {
+      controls.update();
+      composer.render();
+      document.getElementById('loading-screen').classList.add('fade-out');
+      window.parent.postMessage({ type: 'vieux-quartier-ready' }, window.location.origin);
     };
   </script>
 </body>

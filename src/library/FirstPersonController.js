@@ -35,6 +35,8 @@ export class FirstPersonController {
     this.movementAmount = 0;
     this.active = true;
     this.inputEnabled = true;
+    this.sprinting = false;
+    this.lookSensitivity = 1.0;
 
     this.camera.rotation.order = 'YXZ';
     this.camera.position.copy(startPosition);
@@ -65,6 +67,10 @@ export class FirstPersonController {
 
   handleKeyDown(event) {
     if (!this.active || !this.inputEnabled || isTypingTarget(event.target)) return;
+    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+      this.sprinting = true;
+      return;
+    }
     if (event.code === 'KeyE') {
       if (!event.repeat) {
         event.preventDefault();
@@ -80,6 +86,10 @@ export class FirstPersonController {
   }
 
   handleKeyUp(event) {
+    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
+      this.sprinting = false;
+      return;
+    }
     const direction = MOVE_KEYS[event.code];
     if (direction) this.keys.delete(direction);
   }
@@ -96,8 +106,8 @@ export class FirstPersonController {
     const dx = event.clientX - this.lastPointer.x;
     const dy = event.clientY - this.lastPointer.y;
     this.lastPointer.set(event.clientX, event.clientY);
-    this.yaw -= dx * 0.0032;
-    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0028, -0.72, 0.72);
+    this.yaw -= dx * 0.0032 * this.lookSensitivity;
+    this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0028 * this.lookSensitivity, -0.78, 0.78);
     this.applyLook();
   }
 
@@ -114,6 +124,7 @@ export class FirstPersonController {
   handleBlur() {
     this.keys.clear();
     this.touchMoves.clear();
+    this.sprinting = false;
     this.velocity.set(0, 0, 0);
     this.dragPointerId = null;
   }
@@ -156,6 +167,10 @@ export class FirstPersonController {
     this.lookAt(lookTarget);
   }
 
+  setSensitivity(value) {
+    this.lookSensitivity = THREE.MathUtils.clamp(Number(value) || 1, 0.35, 2.5);
+  }
+
   update(delta) {
     if (!this.active || !this.inputEnabled) return 0;
 
@@ -164,9 +179,10 @@ export class FirstPersonController {
     const side = Number(this.keys.has('right') || this.touchMoves.has('right'))
       - Number(this.keys.has('left') || this.touchMoves.has('left'));
     const desired = new THREE.Vector3(side, 0, -forward);
+    const maxSpeed = this.sprinting ? 4.15 : 2.35;
     if (desired.lengthSq()) desired.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
-    desired.multiplyScalar(2.15);
-    this.velocity.lerp(desired, 1 - Math.exp(-11 * delta));
+    desired.multiplyScalar(maxSpeed);
+    this.velocity.lerp(desired, 1 - Math.exp(-12 * delta));
 
     const moveX = this.velocity.x * delta;
     const moveZ = this.velocity.z * delta;
@@ -181,9 +197,9 @@ export class FirstPersonController {
       this.velocity.z = 0;
     }
 
-    this.movementAmount = Math.min(1, Math.hypot(this.velocity.x, this.velocity.z) / 2.15);
-    if (this.movementAmount > 0.04) this.bobClock += delta * 10.5;
-    const headBob = Math.sin(this.bobClock) * 0.028 * this.movementAmount;
+    this.movementAmount = Math.min(1, Math.hypot(this.velocity.x, this.velocity.z) / 2.35);
+    if (this.movementAmount > 0.04) this.bobClock += delta * (this.sprinting ? 14.5 : 10.5);
+    const headBob = Math.sin(this.bobClock) * (this.sprinting ? 0.036 : 0.026) * Math.min(1.2, this.movementAmount);
     this.camera.position.set(this.position.x, this.eyeHeight + headBob, this.position.z);
     return this.movementAmount;
   }

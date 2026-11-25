@@ -4,6 +4,8 @@ import { CURATED_BOOKS, getBookLocation } from './library/books.js';
 import { createLibraryScene } from './library/createLibraryScene.js';
 import { useMultiplayer } from './multiplayer/useMultiplayer.js';
 import PdfReader from './features/reader/PdfReader.jsx';
+import ArenaExperience from './features/arena/ArenaExperience.jsx';
+import { CHARACTER_ORIGINS, LIBRARY_PROLOGUE_SCENE } from './arena/storyEngine.js';
 import {
   libraryApi,
   setLibraryOwnerToken,
@@ -268,7 +270,6 @@ export default function App() {
   const immersiveRootRef = useRef(null);
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
-  const townIframeRef = useRef(null);
   const hasEnteredTownRef = useRef(false);
   const townLeavingRef = useRef(false);
   const townLeaveTimerRef = useRef(null);
@@ -283,8 +284,11 @@ export default function App() {
   const [introVisible, setIntroVisible] = useState(true);
   const [townOpen, setTownOpen] = useState(false);
   const [townLeaving, setTownLeaving] = useState(false);
-  const [townReady, setTownReady] = useState(false);
-  const [townEntryPending, setTownEntryPending] = useState(false);
+  const [selectedOriginId, setSelectedOriginId] = useState(CHARACTER_ORIGINS[0].id);
+  const [customPlayerName, setCustomPlayerName] = useState(CHARACTER_ORIGINS[0].defaultName);
+  const [characterProfile, setCharacterProfile] = useState(null);
+  const [prologueState, setPrologueState] = useState(null);
+  const [introCutsceneActive, setIntroCutsceneActive] = useState(false);
   const [roomOpen, setRoomOpen] = useState(false);
   const [roomNameDraft, setRoomNameDraft] = useState(multiplayer.identity.name);
   const [chatDraft, setChatDraft] = useState('');
@@ -307,6 +311,8 @@ export default function App() {
   });
   const [toast, setToast] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [libraryMapOpen, setLibraryMapOpen] = useState(true);
+  const [libraryPose, setLibraryPose] = useState({ x: 0.2, z: 6.25, yaw: 0 });
   const [mobileHelpOpen, setMobileHelpOpen] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [ownerAccessOpen, setOwnerAccessOpen] = useState(false);
@@ -373,10 +379,11 @@ export default function App() {
     onMoodChange: setMood,
     onEnterTown() {
       setCatalogOpen(false);
-      if (townReady) setTownOpen(true);
-      else setTownEntryPending(true);
+      setPrologueState(null);
+      setTownOpen(true);
     },
     onPose(pose) {
+      setLibraryPose(pose);
       if (!townOpen) multiplayer.sendPose('library', pose);
     },
     onPointerMove(x, y) {
@@ -414,57 +421,33 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    sceneRef.current?.setInputEnabled(!introOpen && activeBookIndex === null && !catalogOpen && !townOpen);
-  }, [introOpen, activeBookIndex, catalogOpen, townOpen]);
+    sceneRef.current?.setInputEnabled(!introOpen && !prologueState && activeBookIndex === null && !catalogOpen && !townOpen);
+    sceneRef.current?.setPaused(introOpen || townOpen);
+  }, [introOpen, prologueState, activeBookIndex, catalogOpen, townOpen]);
 
   useEffect(() => {
-    if (!townReady || !townEntryPending) return;
-    setTownOpen(true);
-    setTownEntryPending(false);
-  }, [townReady, townEntryPending]);
-
-  useEffect(() => {
-    function handleTownMessage(event) {
-      if (event.origin !== window.location.origin || event.source !== townIframeRef.current?.contentWindow) return;
-      if (event.data?.type === 'vieux-quartier-ready') setTownReady(true);
-      if (event.data?.type === 'return-to-library') returnToLibrary();
-      if (event.data?.type === 'town-pose' && townOpen) multiplayer.sendPose('town', event.data.pose);
-    }
-
-    window.addEventListener('message', handleTownMessage);
-    return () => window.removeEventListener('message', handleTownMessage);
-  }, [townOpen, multiplayer.sendPose]);
-
-  useEffect(() => {
-    if (!townReady) return;
-    townIframeRef.current?.contentWindow?.postMessage({ type: 'town-active', active: townOpen }, window.location.origin);
     const pose = townOpen
-      ? { x: -30.2, z: 0, yaw: -Math.PI / 2, pitch: 0, moving: false }
+      ? { x: -44, z: 0, yaw: -Math.PI / 2, pitch: 0, moving: false }
       : sceneRef.current?.getPose();
     if (pose) multiplayer.sendPose(townOpen ? 'town' : 'library', pose);
     if (townOpen) {
       hasEnteredTownRef.current = true;
-      townIframeRef.current?.focus();
     } else if (hasEnteredTownRef.current) {
       canvasRef.current?.querySelector('canvas')?.focus();
     }
-  }, [townOpen, townReady, multiplayer.sendPose]);
+  }, [townOpen, multiplayer.sendPose]);
+
+  const townPlayers = useMemo(() => multiplayer.players.filter((player) => player.zone === 'town'), [multiplayer.players]);
 
   useEffect(() => {
     const libraryPlayers = multiplayer.players.filter((player) => player.zone === 'library');
-    const townPlayers = multiplayer.players.filter((player) => player.zone === 'town');
     sceneRef.current?.setRemotePlayers(libraryPlayers);
-    if (townReady) {
-      townIframeRef.current?.contentWindow?.postMessage({ type: 'multiplayer-players', players: townPlayers }, window.location.origin);
-    }
-  }, [multiplayer.players, townReady]);
+  }, [multiplayer.players]);
 
   useEffect(() => {
     if (!multiplayer.lastAction) return;
     const { fromId, action, zone } = multiplayer.lastAction;
-    if (zone === 'town') {
-      townIframeRef.current?.contentWindow?.postMessage({ type: 'multiplayer-action', action: multiplayer.lastAction }, window.location.origin);
-    } else {
+    if (zone !== 'town') {
       sceneRef.current?.showPlayerAction(fromId, action);
     }
   }, [multiplayer.lastAction]);
@@ -540,6 +523,12 @@ export default function App() {
         return;
       }
 
+      if (event.key.toLowerCase() === 'm' && activeBookIndex === null && !catalogOpen && !introOpen && !townOpen) {
+        event.preventDefault();
+        setLibraryMapOpen((open) => !open);
+        return;
+      }
+
       if (/^[1-5]$/.test(event.key) && activeBookIndex === null && !catalogOpen && !introOpen) {
         changeView(VIEWPOINTS[Number(event.key) - 1][0]);
         return;
@@ -557,9 +546,42 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeBookIndex, accountOpen, catalogOpen, introOpen, readerSettingsOpen]);
 
+  function buildSelectedProfile() {
+    const origin = CHARACTER_ORIGINS.find((o) => o.id === selectedOriginId) || CHARACTER_ORIGINS[0];
+    return {
+      playerName: customPlayerName.trim() || origin.defaultName,
+      originId: origin.id,
+      coatColor: origin.coatColor,
+      cashDelta: 0,
+      repDelta: 0,
+      clue: origin.startClue,
+    };
+  }
+
+  function startStoryCampaign() {
+    const profile = buildSelectedProfile();
+    setCharacterProfile(profile);
+    setIntroVisible(false);
+    setCatalogOpen(false);
+    introTimerRef.current = window.setTimeout(() => {
+      setIntroOpen(false);
+      setTownOpen(true);
+      setIntroCutsceneActive(true);
+    }, 360);
+  }
+
   function enterLibrary() {
     setIntroVisible(false);
     introTimerRef.current = window.setTimeout(() => setIntroOpen(false), 700);
+  }
+
+  function enterTownArena() {
+    if (!characterProfile) setCharacterProfile(buildSelectedProfile());
+    setIntroOpen(false);
+    setIntroVisible(false);
+    setPrologueState(null);
+    setCatalogOpen(false);
+    setTownOpen(true);
   }
 
   function returnToLibrary() {
@@ -871,12 +893,40 @@ export default function App() {
         </div>
       )}
 
-      {!introOpen && (
+      {!introOpen && !townOpen && (
         <div className="pointer-events-none fixed bottom-5 left-4 z-10 hidden xl:block">
           <div className="vintage-panel rounded-xl px-3.5 py-2.5 text-xs text-parchment-200/80">
             <div className="mb-1 font-display uppercase tracking-[0.16em] text-gold-300">Explore the Library</div>
-            <div><kbd className="text-gold-200">W A S D</kbd> walk <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">Drag</kbd> look <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">Scroll</kbd> zoom</div>
-            <div className="mt-0.5"><kbd className="text-gold-200">E</kbd> interact with books, the town door, or room objects <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">F</kbd> fullscreen</div>
+            <div><kbd className="text-gold-200">W A S D</kbd> walk <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">Shift</kbd> sprint <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">Drag</kbd> look</div>
+            <div className="mt-0.5"><kbd className="text-gold-200">E</kbd> interact / town door <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">M</kbd> map <span className="mx-1 text-gold-500">·</span> <kbd className="text-gold-200">F</kbd> fullscreen</div>
+          </div>
+        </div>
+      )}
+
+      {!introOpen && !townOpen && activeBookIndex === null && libraryMapOpen && (
+        <div className="pointer-events-auto fixed bottom-20 right-3 z-20 hidden sm:block sm:bottom-5 sm:right-4">
+          <div className="vintage-panel rounded-2xl p-2.5 shadow-2xl">
+            <div className="mb-1.5 flex items-center justify-between gap-3 px-0.5">
+              <span className="font-display text-[10px] uppercase tracking-[0.2em] text-gold-300">Athenaeum Map</span>
+              <button className="text-[10px] text-parchment-200/65 hover:text-gold-300" type="button" onClick={() => setLibraryMapOpen(false)} title="Hide map (M)">[M]</button>
+            </div>
+            <svg viewBox="-8 -8 16 16" className="h-32 w-32 rounded-xl border border-gold-500/25 bg-[#19110c]">
+              <rect x="-7.8" y="-7.8" width="15.6" height="15.6" fill="none" stroke="#85653a" strokeWidth="0.25" />
+              {/* Shelves */}
+              <rect x="-7.5" y="-6.2" width="0.9" height="12.4" fill="#633822" onClick={() => changeView('westShelves')} className="cursor-pointer hover:fill-[#9c5e3a]" />
+              <rect x="6.6" y="-6.2" width="0.9" height="12.4" fill="#633822" onClick={() => changeView('eastShelves')} className="cursor-pointer hover:fill-[#9c5e3a]" />
+              <rect x="-5.4" y="-7.5" width="10.8" height="0.9" fill="#633822" onClick={() => changeView('upperGallery')} className="cursor-pointer hover:fill-[#9c5e3a]" />
+              {/* Reading Table */}
+              <rect x="-1.8" y="0" width="3.6" height="1.7" rx="0.2" fill="#234d39" stroke="#cfa349" strokeWidth="0.12" onClick={() => changeView('readingDesk')} className="cursor-pointer" />
+              {/* Town Door */}
+              <rect x="-1.1" y="7.2" width="2.2" height="0.6" fill="#d9a04a" onClick={enterTownArena} className="cursor-pointer" />
+              <text x="0" y="6.85" textAnchor="middle" fill="#f7d89c" fontSize="0.85">Town Door</text>
+              {/* Player Dot & Heading */}
+              <g transform={`translate(${libraryPose.x}, ${libraryPose.z}) rotate(${(-libraryPose.yaw * 180) / Math.PI})`}>
+                <polygon points="0,-1.5 -0.7,0 0.7,0" fill="rgba(52, 211, 153, 0.35)" />
+                <circle cx="0" cy="0" r="0.55" fill="#34d399" stroke="#ffffff" strokeWidth="0.18" />
+              </g>
+            </svg>
           </div>
         </div>
       )}
@@ -906,45 +956,154 @@ export default function App() {
       </div>
 
       {introOpen && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-espresso-950/85 p-4 backdrop-blur-md transition-opacity duration-700 ${introVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-          <section className="vintage-panel relative max-h-[92dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-2xl p-5 text-center sm:p-10">
+        <div className={`fixed inset-0 z-[90] flex items-center justify-center bg-espresso-950/35 p-4 backdrop-blur-[3px] transition-opacity duration-700 ${introVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+          <section className="vintage-panel relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-2xl p-5 text-center sm:p-8">
             <span className="absolute left-3 top-3 h-6 w-6 rounded-tl border-l-2 border-t-2 border-gold-500/60" />
             <span className="absolute right-3 top-3 h-6 w-6 rounded-tr border-r-2 border-t-2 border-gold-500/60" />
             <span className="absolute bottom-3 left-3 h-6 w-6 rounded-bl border-b-2 border-l-2 border-gold-500/60" />
             <span className="absolute bottom-3 right-3 h-6 w-6 rounded-br border-b-2 border-r-2 border-gold-500/60" />
 
-            <div className="mb-2 font-display text-xs uppercase tracking-[0.35em] text-gold-400">Est. MDCCCLXXXIV</div>
-            <h1 className="mb-3 font-display text-3xl tracking-wide text-parchment-50 sm:text-4xl md:text-5xl">
-              The Grand Athenaeum
+            <div className="mb-1.5 font-display text-xs uppercase tracking-[0.3em] text-gold-400">Open-World Story Campaign</div>
+            <h1 className="mb-2 font-display text-3xl tracking-wide text-parchment-50 sm:text-4xl">
+              Chronicles of Leonida Bay
             </h1>
-            <div className="mb-5 flex items-center justify-center gap-3">
-              <span className="h-px w-12 bg-gradient-to-r from-transparent to-gold-500" />
-              <span className="text-sm text-gold-400">❖</span>
-              <span className="h-px w-12 bg-gradient-to-l from-transparent to-gold-500" />
-            </div>
-            <p className="mb-6 font-body text-base leading-relaxed text-parchment-200/90 sm:text-lg">
-              Step into a first-person library. Walk the mahogany aisles, pull a volume from the shelf, carry it to the reading table, and settle in with its pages.
+            <p className="mb-4 text-xs leading-relaxed text-parchment-200/85 sm:text-sm">
+              The Sovereign Codex was stolen from The Grand Athenaeum moments ago. Choose your protagonist, make story choices, pursue the thieves out the South Door, and drive across Leonida Bay.
             </p>
 
-            <div className="mb-7 grid grid-cols-1 gap-2.5 text-left text-xs text-parchment-200/80 sm:grid-cols-3">
-              <div className="rounded-lg border border-gold-500/20 bg-espresso-900/70 p-3">
-                <div className="mb-0.5 font-display text-gold-300">Walk the Stacks</div>
-                Use WASD and drag to look. On phones, use the movement pad.
-              </div>
-              <div className="rounded-lg border border-gold-500/20 bg-espresso-900/70 p-3">
-              <div className="mb-0.5 font-display text-gold-300">{libraryBooks.length} Curated Tomes</div>
-                Press E near a volume, then carry it to the reading table.
-              </div>
-              <div className="rounded-lg border border-gold-500/20 bg-espresso-900/70 p-3">
-                <div className="mb-0.5 font-display text-gold-300">Beyond the Door</div>
-                Turn around and press E at the carved door to enter Vieux Quartier. Click the lamp or chandelier to change the light.
-              </div>
+            <div className="mb-4 text-left">
+              <label className="mb-1 block font-display text-[11px] uppercase tracking-wider text-gold-300" htmlFor="protagonist-name">
+                Protagonist Name
+              </label>
+              <input
+                id="protagonist-name"
+                type="text"
+                maxLength={24}
+                value={customPlayerName}
+                onChange={(e) => setCustomPlayerName(e.target.value)}
+                className="min-h-10 w-full rounded-xl border border-gold-500/35 bg-espresso-950/80 px-3 text-sm text-parchment-50 outline-none focus:border-gold-400"
+              />
             </div>
 
-            <button className="vintage-btn min-h-12 cursor-pointer rounded-xl px-8 py-3.5 font-display text-sm uppercase tracking-[0.2em] sm:text-base" onClick={enterLibrary}>
-              Step Inside the Athenaeum
-            </button>
+            <div className="mb-6 grid grid-cols-1 gap-2.5 text-left text-xs sm:grid-cols-3">
+              {CHARACTER_ORIGINS.map((origin) => {
+                const selected = origin.id === selectedOriginId;
+                return (
+                  <button
+                    key={origin.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedOriginId(origin.id);
+                      setCustomPlayerName(origin.defaultName);
+                    }}
+                    className={`rounded-xl border p-3 text-left transition ${
+                      selected
+                        ? 'border-gold-400 bg-gold-500/15 shadow-lg'
+                        : 'border-gold-500/20 bg-espresso-900/70 hover:border-gold-500/45'
+                    }`}
+                  >
+                    <div className="font-display text-sm font-bold text-gold-300">{origin.defaultName}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-amber-200/75">{origin.title}</div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-parchment-200/80">{origin.backstory}</p>
+                    <div className="mt-2 font-semibold text-emerald-300">{origin.perk}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <button className="vintage-btn min-h-12 cursor-pointer rounded-xl px-7 py-3 font-display text-sm uppercase tracking-[0.18em]" onClick={startStoryCampaign}>
+                Start Story Game
+              </button>
+              <button className="vintage-btn min-h-12 cursor-pointer rounded-xl px-5 py-3 font-display text-xs uppercase tracking-[0.14em]" onClick={enterTownArena}>
+                Direct to City &amp; Cars
+              </button>
+              <button className="min-h-12 cursor-pointer rounded-xl border border-gold-500/25 px-4 py-3 font-display text-xs uppercase tracking-[0.14em] text-parchment-200/80 hover:border-gold-400/50 hover:text-parchment-50" onClick={enterLibrary}>
+                Library Free Roam
+              </button>
+            </div>
           </section>
+        </div>
+      )}
+
+      {prologueState && !introOpen && !townOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-between bg-black/30">
+          <div className="h-12 w-full bg-black/95" />
+          <div className="mx-auto mb-6 mt-auto w-[min(94vw,42rem)] rounded-2xl border border-gold-400/45 bg-espresso-950/95 p-5 text-parchment-50 shadow-2xl backdrop-blur-md">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <span className="font-display text-base font-bold text-gold-300">
+                  {LIBRARY_PROLOGUE_SCENE.lines[prologueState.index].speaker}
+                </span>
+                <span className="ml-2 text-[11px] uppercase tracking-wider text-parchment-200/65">
+                  {LIBRARY_PROLOGUE_SCENE.lines[prologueState.index].role}
+                </span>
+              </div>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gold-400">{LIBRARY_PROLOGUE_SCENE.title}</span>
+            </div>
+            <p className="mb-4 text-sm leading-relaxed text-parchment-100 sm:text-base">
+              {prologueState.replyText || LIBRARY_PROLOGUE_SCENE.lines[prologueState.index].text}
+            </p>
+            <div className="flex flex-wrap justify-end gap-2">
+              {LIBRARY_PROLOGUE_SCENE.lines[prologueState.index].choices && !prologueState.replyText ? (
+                LIBRARY_PROLOGUE_SCENE.lines[prologueState.index].choices.map((choice, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const base = characterProfile || buildSelectedProfile();
+                      setCharacterProfile({
+                        ...base,
+                        cashDelta: (base.cashDelta || 0) + (choice.cashDelta || 0),
+                        repDelta: (base.repDelta || 0) + (choice.repDelta || 0),
+                        clue: choice.clue || base.clue,
+                      });
+                      setPrologueState({ ...prologueState, replyText: choice.reply });
+                    }}
+                    className="vintage-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                  >
+                    {choice.label}
+                  </button>
+                ))
+              ) : prologueState.index + 1 < LIBRARY_PROLOGUE_SCENE.lines.length ? (
+                <button
+                  type="button"
+                  onClick={() => setPrologueState({ index: prologueState.index + 1, replyText: null })}
+                  className="vintage-btn rounded-xl px-5 py-2 text-xs font-bold"
+                >
+                  Next →
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrologueState(null);
+                      setJourneyState({
+                        phase: 'explore',
+                        prompt: 'Turn around and walk to the South Carved Door (press E or click it) to step outside into Leonida Bay!',
+                        bookTitle: 'Prologue Objective',
+                      });
+                    }}
+                    className="rounded-xl border border-gold-400/35 px-4 py-2 text-xs font-semibold text-parchment-100 hover:bg-gold-500/15"
+                  >
+                    Walk to South Door Myself
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPrologueState(null);
+                      sceneRef.current?.openTown();
+                    }}
+                    className="vintage-btn rounded-xl px-5 py-2 text-xs font-bold"
+                  >
+                    Open South Door &amp; Step Outside →
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="h-12 w-full bg-black/95" />
         </div>
       )}
 
@@ -962,6 +1121,14 @@ export default function App() {
         </div>
 
         <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <button className="vintage-btn flex min-h-11 min-w-11 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 font-display text-xs tracking-wider" onClick={enterTownArena} title="Step outside into Vieux Quartier &amp; drive vintage cars">
+            <span>🚗</span>
+            <span className="hidden sm:inline">Town &amp; Cars</span>
+          </button>
+          <button className={`vintage-btn hidden min-h-11 min-w-11 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 font-display text-xs tracking-wider sm:flex ${libraryMapOpen ? 'active' : ''}`} onClick={() => setLibraryMapOpen((open) => !open)} title="Toggle Library Map (M)">
+            <span>🗺️</span>
+            <span className="hidden lg:inline">Map</span>
+          </button>
           <button className="vintage-btn flex min-h-11 min-w-11 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-2 font-display text-xs tracking-wider" onClick={switchMood} title="Switch Lighting Atmosphere">
             <span>{mood === 'midnight' ? '🌙' : '☀️'}</span>
             <span className="hidden sm:inline">{mood === 'midnight' ? 'Candlelit Midnight' : 'Golden Afternoon'}</span>
@@ -1231,32 +1398,20 @@ export default function App() {
         )}
       </section>
 
-      <section
-        className={`fixed inset-0 z-[80] overflow-hidden bg-[#1c1612] ${townOpen ? (townLeaving ? 'town-leaving' : 'town-arrival') : 'pointer-events-none opacity-0'}`}
-        aria-label="Vieux Quartier town exploration"
-        aria-hidden={!townOpen}
-        inert={!townOpen}
-      >
-          <iframe
-            ref={townIframeRef}
-            className="absolute inset-0 h-full w-full border-0"
-            src="/vieux-quartier.html"
-            title="Vieux Quartier interactive 3D town"
-            allow="fullscreen"
-            tabIndex={-1}
-          />
-          <button
-            className="fixed left-4 top-[calc(env(safe-area-inset-top)+6.25rem)] z-[90] flex min-h-11 items-center gap-2 rounded-xl border border-[#ddb978]/45 bg-[#211910]/90 px-4 font-display text-xs tracking-wider text-[#fff0d4] shadow-lg backdrop-blur-md transition hover:border-[#f6d79b] hover:bg-[#3a2818]"
-            type="button"
-            onClick={returnToLibrary}
-            aria-label="Return to the library"
-          >
-            <span aria-hidden="true" className="text-base">←</span> Return to Library
-          </button>
-      </section>
+      <ArenaExperience
+        active={(townOpen && !townLeaving) || introOpen}
+        flyoverOnly={introOpen && !townOpen}
+        playIntroSeq={introCutsceneActive}
+        onIntroSeqDone={() => setIntroCutsceneActive(false)}
+        characterProfile={characterProfile}
+        remotePlayers={townPlayers}
+        lastAction={multiplayer.lastAction}
+        onReturnToLibrary={returnToLibrary}
+        onPose={(pose) => multiplayer.sendPose('town', pose)}
+      />
 
       <button
-        className="fixed right-4 top-[calc(env(safe-area-inset-top)+5.25rem)] z-[110] flex min-h-11 items-center gap-2 rounded-xl border border-[#ddb978]/45 bg-[#211910]/90 px-3.5 font-display text-xs tracking-wider text-[#fff0d4] shadow-lg backdrop-blur-md transition hover:border-[#f6d79b] hover:bg-[#3a2818]"
+        className={`fixed right-4 z-[110] flex min-h-11 items-center gap-2 rounded-xl border border-[#ddb978]/45 bg-[#211910]/90 px-3.5 font-display text-xs tracking-wider text-[#fff0d4] shadow-lg backdrop-blur-md transition hover:border-[#f6d79b] hover:bg-[#3a2818] ${townOpen ? 'top-[calc(env(safe-area-inset-top)+4.75rem)]' : 'top-[calc(env(safe-area-inset-top)+5.25rem)]'}`}
         type="button"
         onClick={() => setRoomOpen((open) => !open)}
         aria-expanded={roomOpen}
